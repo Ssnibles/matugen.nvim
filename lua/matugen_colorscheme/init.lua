@@ -120,7 +120,6 @@ local function apply_base_highlights(colors, background_style)
   local bg_visual = M.config.transparent_background and "NONE" or colors.surface_variant
 
   -- Define consistent foreground colors for UI elements
-  -- This helps reduce the number of distinct hues in the UI
   local ui_normal_fg = colors.outline or colors.on_surface_variant -- For subtle UI elements
   local ui_active_fg = colors.on_surface -- For more prominent UI elements
 
@@ -214,19 +213,19 @@ local function apply_base_highlights(colors, background_style)
   set_hl("EndOfBuffer", ui_normal_fg)
   set_hl("SpecialKey", ui_normal_fg)
 
-  --- Basic Syntax Highlighting (harmonious and distinct, less reliance on arbitrary colors) ---
+  --- Basic Syntax Highlighting (often falls back if TS is not active) ---
   set_hl("Comment", colors.comment or colors.outline, nil, "italic")
-  set_hl("Constant", colors.tertiary_fixed) -- Numbers, booleans, floats, general constants
+  set_hl("Constant", colors.tertiary_fixed) -- General constants, numbers, floats
   set_hl("String", colors.secondary_fixed)
   set_hl("Character", colors.secondary_fixed)
   set_hl("Number", colors.tertiary_fixed)
-  set_hl("Boolean", colors.tertiary_fixed)
+  set_hl("Boolean", colors.on_error_container or colors.error) -- More distinct for booleans (e.g., true/false)
   set_hl("Float", colors.tertiary_fixed)
-  set_hl("Identifier", colors.on_surface) -- Consistent with Normal text, but still visible
+  set_hl("Identifier", colors.on_surface) -- Consistent with Normal text
   set_hl("Function", colors.primary_fixed)
-  set_hl("Statement", colors.primary, nil, "bold") -- Keywords like if, for, while
-  set_hl("Conditional", colors.primary)
-  set_hl("Repeat", colors.primary)
+  set_hl("Statement", colors.primary, nil, "bold") -- General keywords, flow control
+  set_hl("Conditional", colors.primary_fixed_dim or colors.primary, nil, "bold") -- Specific for 'if', 'else', 'switch'
+  set_hl("Repeat", colors.primary_fixed_dim or colors.primary, nil, "bold") -- Specific for 'for', 'while'
   set_hl("Label", colors.primary_fixed_dim or colors.primary)
   set_hl("Operator", colors.on_surface_variant)
   set_hl("Keyword", colors.primary)
@@ -373,10 +372,10 @@ local function apply_treesitter_highlights(colors)
   -- Reuse the consistent foreground colors for UI elements defined in apply_base_highlights
   local ui_normal_fg = colors.outline or colors.on_surface_variant
 
-  -- Treesitter highlight groups (harmonious and consistent with base syntax)
+  -- Treesitter highlight groups (harmonious and distinct, less reliance on arbitrary colors)
   set_hl("@comment", colors.comment or colors.outline, nil, "italic")
 
-  -- Constants, numbers, booleans, floats
+  -- Constants, numbers, floats (more generally "literal" values)
   set_hl("@constant", colors.tertiary_fixed)
   set_hl("@constant.builtin", colors.tertiary_fixed_dim or colors.tertiary)
   set_hl("@constant.macro", colors.tertiary_container)
@@ -384,8 +383,11 @@ local function apply_treesitter_highlights(colors)
   set_hl("@string.escape", colors.tertiary)
   set_hl("@character", colors.secondary_fixed)
   set_hl("@number", colors.tertiary_fixed)
-  set_hl("@boolean", colors.tertiary_fixed)
   set_hl("@float", colors.tertiary_fixed)
+
+  -- Booleans - give them a distinct, possibly slightly "alarming" but readable color, like error_container
+  -- This provides strong contrast and signals a "state" value.
+  set_hl("@boolean", colors.on_error_container or colors.error)
 
   -- Variables, properties
   set_hl("@variable", colors.on_surface) -- Consistent with base Identifier
@@ -403,6 +405,14 @@ local function apply_treesitter_highlights(colors)
   set_hl("@keyword", colors.primary)
   set_hl("@operator", colors.on_surface_variant) -- Consistent with base Operator
   set_hl("@exception", colors.error)
+
+  -- Conditionals and Repeats/Flow Control - use a distinct, slightly bolder variant of primary
+  -- This makes "if", "else", "for", "while", "return" stand out more.
+  set_hl("@conditional", colors.primary, nil, "bold") -- Using primary with bold
+  set_hl("@repeat", colors.primary, nil, "bold") -- Consistent with conditional
+  set_hl("@label", colors.primary_fixed_dim or colors.primary)
+  set_hl("@include", colors.secondary) -- Link includes to secondary
+  set_hl("@return", colors.primary, nil, "bold") -- Explicitly highlight returns
 
   -- Types
   set_hl("@type", colors.secondary_fixed_dim or colors.secondary)
@@ -450,7 +460,7 @@ local function apply_treesitter_highlights(colors)
 
   -- Diagnostic (TS)
   set_hl("@diagnostic.error", colors.error)
-  set_hl("@diagnostic.warning", colors.primary) -- Note: using primary for warning here for subtle differentiation
+  set_hl("@diagnostic.warning", colors.primary)
   set_hl("@diagnostic.info", colors.secondary)
   set_hl("@diagnostic.hint", colors.tertiary)
 
