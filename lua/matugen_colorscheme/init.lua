@@ -4,6 +4,7 @@ local M = {}
 
 -- Global variable to store loaded colors
 local loaded_colors = {}
+-- Global variable to store the current background style, updated by config or toggle
 local current_background_style = "dark"
 
 --- Helper to expand a path (like `~`)
@@ -17,10 +18,13 @@ local function expand_path(path)
 end
 
 --- Strips comments from JSONC content.
+--- This function handles both single-line (//) and multi-line (/* ... */) comments.
 --- @param jsonc_content string The JSONC content as a string.
 --- @return string The JSON content without comments.
 local function strip_jsonc_comments(jsonc_content)
-  local without_block_comments = jsonc_content:gsub("/%*.--%*/", "")
+  -- Remove multi-line comments /* ... */
+  local without_block_comments = jsonc_content:gsub("/%*.-\\%*/", "")
+  -- Remove single-line comments // ... to end of line
   local without_comments = without_block_comments:gsub("//[^\n\r]*", "")
   return without_comments
 end
@@ -53,7 +57,12 @@ local function read_matugen_colors_file(file_path)
   return colors
 end
 
--- Helper for setting highlights with override check
+--- Helper for setting highlights with override check
+--- This function centralizes the logic for applying highlights and respecting `ignore_groups`.
+--- @param group string The highlight group name.
+--- @param fg string|nil Foreground color (hex string or "NONE").
+--- @param bg string|nil Background color (hex string or "NONE").
+--- @param style string|nil Style (e.g., "bold", "italic", "underline", "reverse").
 local function set_hl(group, fg, bg, style)
   -- Check if this group should be ignored (user override)
   if M.config.ignore_groups and M.config.ignore_groups[group] then
@@ -73,7 +82,10 @@ local function set_hl(group, fg, bg, style)
   vim.cmd(cmd)
 end
 
--- Helper for setting highlight links with override check
+--- Helper for setting highlight links with override check
+--- This function centralizes the logic for linking highlights and respecting `ignore_groups`.
+--- @param from string The highlight group to link from.
+--- @param to string The highlight group to link to.
 local function set_hl_link(from, to)
   if M.config.ignore_groups and M.config.ignore_groups[from] then
     return
@@ -81,10 +93,11 @@ local function set_hl_link(from, to)
   vim.cmd("highlight link " .. from .. " " .. to)
 end
 
----Applies general highlight groups based on the loaded colors.
----@param colors table The table of color values (hex strings).
----@param background_style string "dark" or "light"
+--- Applies general highlight groups based on the loaded colors.
+--- @param colors table The table of color values (hex strings).
+--- @param background_style string "dark" or "light"
 local function apply_base_highlights(colors, background_style)
+  -- Clear existing highlights before applying new ones
   if not M.config.disable_clear then
     vim.cmd("highlight clear")
     if vim.fn.exists("syntax_on") then
@@ -95,28 +108,46 @@ local function apply_base_highlights(colors, background_style)
   vim.o.background = background_style
   vim.g.colors_name = "matugen_colors"
 
+  -- Determine background colors based on transparent_background option
+  local bg_normal = M.config.transparent_background and "NONE" or colors.background
+  local bg_float = M.config.transparent_background and "NONE" or (colors.surface_container_low or colors.surface)
+  local bg_pmenu = M.config.transparent_background and "NONE" or (colors.surface_container or colors.surface)
+  local bg_statusline = M.config.transparent_background and "NONE" or (colors.surface_container_high or colors.surface)
+  local bg_tabline = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
+  local bg_cursorline = M.config.transparent_background and "NONE" or (colors.surface_container_low or colors.surface)
+  local bg_cmdline = M.config.transparent_background and "NONE" or colors.background
+  local bg_col_line = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
+  local bg_visual = M.config.transparent_background and "NONE" or colors.surface_variant
+
   -- Base Neovim UI Colors
-  set_hl("Normal", colors.on_background, colors.background)
-  set_hl("NormalFloat", colors.on_surface, colors.surface_container_low or colors.surface)
-  set_hl("FloatBorder", colors.outline_variant, colors.surface_container_low or colors.surface)
-  set_hl("VertSplit", colors.outline_variant, colors.background)
-  set_hl("Pmenu", colors.on_surface, colors.surface_container or colors.surface)
+  set_hl("Normal", colors.on_background, bg_normal)
+  set_hl("NormalNC", colors.on_surface_variant, bg_normal) -- Normal for non-current windows
+  set_hl("NormalFloat", colors.on_surface, bg_float)
+  set_hl("FloatBorder", colors.outline_variant, bg_float)
+  set_hl("VertSplit", colors.outline_variant, bg_normal)
+  set_hl("WinSeparator", colors.outline_variant, bg_normal) -- Link to VertSplit for consistency
+  set_hl("Pmenu", colors.on_surface, bg_pmenu)
   set_hl("PmenuSel", colors.on_primary, colors.primary)
-  set_hl("PmenuSbar", nil, colors.surface_variant)
+  set_hl("PmenuSbar", nil, bg_pmenu)
   set_hl("PmenuThumb", nil, colors.on_surface_variant or colors.on_surface)
+  set_hl("FloatFooter", colors.on_surface, bg_float)
+  set_hl("FloatHeader", colors.on_surface, bg_float)
 
   -- Line Numbers, Sign Column, Fold Column
-  set_hl("LineNr", colors.outline, colors.background)
-  set_hl("SignColumn", colors.outline, colors.background)
-  set_hl("FoldColumn", colors.outline, colors.background)
+  set_hl("LineNr", colors.outline, bg_normal)
+  set_hl("LineNrAbove", colors.outline, bg_normal) -- For relative line numbers above cursor
+  set_hl("LineNrBelow", colors.outline, bg_normal) -- For relative line numbers below cursor
+  set_hl("SignColumn", colors.outline, bg_normal)
+  set_hl("FoldColumn", colors.outline, bg_normal)
 
   -- Cursorline and Number
-  set_hl("CursorLine", nil, colors.surface_container_low or colors.surface)
-  set_hl("CursorLineNr", colors.primary, colors.surface_container_low or colors.surface, "bold")
+  set_hl("CursorLine", nil, bg_cursorline)
+  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold")
+  set_hl("CursorColumn", nil, bg_cursorline) -- Highlight for cursor column
 
   -- Visual mode selection
-  set_hl("Visual", nil, colors.surface_variant)
-  set_hl("VisualNOS", nil, colors.surface_variant)
+  set_hl("Visual", nil, bg_visual)
+  set_hl("VisualNOS", nil, bg_visual)
 
   -- Search and IncSearch
   set_hl("IncSearch", colors.on_secondary, colors.secondary_container, "bold")
@@ -128,6 +159,12 @@ local function apply_base_highlights(colors, background_style)
   set_hl("InfoMsg", colors.on_secondary_container, colors.secondary_container)
   set_hl("HintMsg", colors.on_tertiary_container, colors.tertiary_container)
 
+  -- LSP Diagnostics (linking to general diagnostic messages)
+  set_hl_link("LspDiagnosticsError", "ErrorMsg")
+  set_hl_link("LspDiagnosticsWarning", "WarningMsg")
+  set_hl_link("LspDiagnosticsInformation", "InfoMsg")
+  set_hl_link("LspDiagnosticsHint", "HintMsg")
+
   -- Diffs
   set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container)
   set_hl("DiffChange", colors.on_primary_container, colors.primary_container)
@@ -135,18 +172,14 @@ local function apply_base_highlights(colors, background_style)
   set_hl("DiffText", colors.on_secondary_container, colors.secondary_container)
 
   -- Statusline and Tabline
-  set_hl("StatusLine", colors.on_surface, colors.surface_container_high or colors.surface)
-  set_hl("StatusLineNC", colors.outline, colors.surface_container_low or colors.surface)
-  set_hl("TabLine", colors.on_surface_variant or colors.on_surface, colors.surface_container_lowest or colors.surface)
-  set_hl(
-    "TabLineFill",
-    colors.on_surface_variant or colors.on_surface,
-    colors.surface_container_lowest or colors.surface
-  )
+  set_hl("StatusLine", colors.on_surface, bg_statusline)
+  set_hl("StatusLineNC", colors.outline, bg_float)
+  set_hl("TabLine", colors.on_surface_variant or colors.on_surface, bg_tabline)
+  set_hl("TabLineFill", colors.on_surface_variant or colors.on_surface, bg_tabline)
   set_hl("TabLineSel", colors.on_primary, colors.primary, "bold")
 
   -- Command Line
-  set_hl("CmdLine", colors.on_surface, colors.background)
+  set_hl("CmdLine", colors.on_surface, bg_cmdline)
 
   -- Spell checking
   set_hl("SpellBad", colors.on_error, colors.error_container, "underline")
@@ -155,7 +188,7 @@ local function apply_base_highlights(colors, background_style)
   set_hl("SpellLocal", colors.on_tertiary_container, colors.tertiary_container, "underline")
 
   -- Other UI elements
-  set_hl("ColorColumn", nil, colors.surface_container_lowest or colors.surface)
+  set_hl("ColorColumn", nil, bg_col_line)
   set_hl("Cursor", colors.background, colors.on_background)
   set_hl("lCursor", colors.background, colors.on_background)
   set_hl("MatchParen", colors.on_primary, colors.primary_container, "bold")
@@ -167,12 +200,9 @@ local function apply_base_highlights(colors, background_style)
   set_hl("ModeMsg", colors.primary_container)
   set_hl("MoreMsg", colors.tertiary)
   set_hl("Question", colors.secondary)
-  set_hl(
-    "Folded",
-    colors.on_surface_variant or colors.on_surface,
-    colors.surface_container_high or colors.surface,
-    "italic"
-  )
+  set_hl("Folded", colors.on_surface_variant or colors.on_surface, bg_statusline, "italic")
+  set_hl("EndOfBuffer", colors.outline_variant) -- For '~' at end of buffer
+  set_hl("SpecialKey", colors.outline_variant) -- For special characters like tabs
 
   -- Basic Syntax Highlighting (often falls back if TS is not active)
   set_hl("Comment", colors.comment or colors.outline, nil, "italic")
@@ -220,7 +250,7 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownCodeBlock", "Constant")
   set_hl_link("markdownBold", "Statement")
   set_hl_link("markdownItalic", "Comment")
-  set_hl("markdownItalic", nil, nil, "italic")
+  set_hl("markdownItalic", nil, nil, "italic") -- Re-apply italic explicitly
   set_hl_link("markdownLinkText", "Function")
   set_hl_link("markdownLinkUrl", "Underlined")
   set_hl_link("markdownHeading1", "Title")
@@ -237,26 +267,53 @@ local function apply_base_highlights(colors, background_style)
     set_hl("NvimTreeSymlink", colors.tertiary)
 
     -- Telescope
-    set_hl("TelescopeNormal", colors.on_surface, colors.surface_container_low or colors.surface)
-    set_hl("TelescopeBorder", colors.outline, colors.surface_container_low or colors.surface)
-    set_hl("TelescopePromptNormal", colors.on_surface, colors.surface_container_high or colors.surface)
-    set_hl("TelescopePromptBorder", colors.primary, colors.surface_container_high or colors.surface)
-    set_hl("TelescopePromptPrefix", colors.primary, colors.surface_container_high or colors.surface, "bold")
+    set_hl("TelescopeNormal", colors.on_surface, bg_float)
+    set_hl("TelescopeBorder", colors.outline, bg_float)
+    set_hl("TelescopePromptNormal", colors.on_surface, bg_statusline)
+    set_hl("TelescopePromptBorder", colors.primary, bg_statusline)
+    set_hl("TelescopePromptPrefix", colors.primary, bg_statusline, "bold")
     set_hl("TelescopeMatching", colors.primary, nil, "bold")
     set_hl("TelescopeSelection", colors.on_primary_container, colors.primary_container)
+    set_hl_link("TelescopeResultsNormal", "NormalFloat")
+    set_hl_link("TelescopeResultsSelection", "TelescopeSelection")
 
     -- Cmp (Completion)
-    set_hl("CmpBorder", colors.outline_variant, colors.surface_container_low or colors.surface)
-    set_hl("CmpMenu", colors.on_surface, colors.surface_container_low or colors.surface)
-    set_hl("CmpItemKind", colors.outline)
+    set_hl("CmpBorder", colors.outline_variant, bg_float)
+    set_hl("CmpMenu", colors.on_surface, bg_float)
+    set_hl("CmpItemKind", colors.outline) -- Default kind color
+    set_hl("CmpItemKindText", colors.on_surface)
+    set_hl("CmpItemKindMethod", colors.primary)
+    set_hl("CmpItemKindFunction", colors.primary)
+    set_hl("CmpItemKindConstructor", colors.primary)
+    set_hl("CmpItemKindField", colors.primary_container)
+    set_hl("CmpItemKindVariable", colors.on_background)
+    set_hl("CmpItemKindClass", colors.secondary_fixed or colors.secondary)
+    set_hl("CmpItemKindInterface", colors.secondary_fixed or colors.secondary)
+    set_hl("CmpItemKindModule", colors.secondary)
+    set_hl("CmpItemKindProperty", colors.primary_container)
+    set_hl("CmpItemKindUnit", colors.tertiary)
+    set_hl("CmpItemKindValue", colors.tertiary)
+    set_hl("CmpItemKindEnum", colors.secondary_fixed or colors.secondary)
+    set_hl("CmpItemKindKeyword", colors.primary)
+    set_hl("CmpItemKindSnippet", colors.tertiary_container)
+    set_hl("CmpItemKindColor", colors.tertiary)
+    set_hl("CmpItemKindFile", colors.primary_container)
+    set_hl("CmpItemKindReference", colors.primary)
+    set_hl("CmpItemKindFolder", colors.secondary)
+    set_hl("CmpItemKindEnumMember", colors.tertiary)
+    set_hl("CmpItemKindConstant", colors.tertiary)
+    set_hl("CmpItemKindStruct", colors.secondary_fixed or colors.secondary)
+    set_hl("CmpItemKindEvent", colors.tertiary_fixed or colors.tertiary)
+    set_hl("CmpItemKindOperator", colors.outline)
+    set_hl("CmpItemKindTypeParameter", colors.secondary_fixed or colors.secondary)
     set_hl("CmpItemAbbr", colors.on_surface)
     set_hl("CmpItemAbbrDeprecated", colors.outline_variant, nil, "strikethrough")
     set_hl("CmpItemAbbrMatch", colors.primary, nil, "bold")
     set_hl("CmpItemAbbrMatchFuzzy", colors.primary, nil, "underline")
     set_hl("CmpItemMenu", colors.outline_variant)
     set_hl("CmpItemSel", colors.on_primary, colors.primary)
-    set_hl("CmpDocBorder", colors.outline_variant, colors.surface_container or colors.surface)
-    set_hl("CmpDoc", colors.on_surface, colors.surface_container or colors.surface)
+    set_hl("CmpDocBorder", colors.outline_variant, bg_pmenu)
+    set_hl("CmpDoc", colors.on_surface, bg_pmenu)
 
     -- Gitsigns
     set_hl("GitSignsAdd", colors.tertiary, nil, "bold")
@@ -265,15 +322,15 @@ local function apply_base_highlights(colors, background_style)
     set_hl("GitSignsChangeDelete", colors.error, nil, "bold")
 
     -- Bufferline / Barbar
-    set_hl("BufferLineFill", colors.surface_container_lowest or colors.surface)
+    set_hl("BufferLineFill", bg_tabline)
     set_hl(
       "BufferLineBuffer",
       colors.on_surface_variant or colors.on_surface,
-      colors.surface_container_low or colors.surface
+      bg_float -- Use float background for inactive buffers
     )
     set_hl("BufferLineBufferSelected", colors.on_primary, colors.primary, "bold")
-    set_hl("BufferLineTabSeparator", colors.background, colors.surface_container_lowest or colors.surface)
-    set_hl("BufferLineBufferVisible", colors.on_surface, colors.surface_container or colors.surface)
+    set_hl("BufferLineTabSeparator", colors.background, bg_tabline)
+    set_hl("BufferLineBufferVisible", colors.on_surface, bg_pmenu) -- Use pmenu background for visible but not selected
 
     -- LspSaga
     set_hl("LspSagaBorderTitle", colors.primary)
@@ -293,8 +350,8 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("CursorIM", "Normal")
 end
 
----Applies Treesitter-specific highlight groups.
----@param colors table The table of color values (hex strings).
+--- Applies Treesitter-specific highlight groups.
+--- @param colors table The table of color values (hex strings).
 local function apply_treesitter_highlights(colors)
   if M.config.disable_treesitter_highlights then
     return
@@ -383,18 +440,24 @@ local function apply_treesitter_highlights(colors)
   set_hl("@lsp.type.macro", colors.tertiary_container)
 end
 
----Applies custom user highlight overrides
----@param colors table The table of color values (hex strings).
+--- Applies custom user highlight overrides.
+--- This function now uses the `set_hl` helper to ensure `ignore_groups` are respected.
+--- @param colors table The table of color values (hex strings).
 local function apply_custom_highlights(colors)
   if not M.config.custom_highlights then
     return
   end
 
   for group, opts in pairs(M.config.custom_highlights) do
+    -- If the group is ignored, skip it entirely
+    if M.config.ignore_groups and M.config.ignore_groups[group] then
+      goto continue -- Lua's goto for skipping loop iteration
+    end
+
     local fg, bg, style = nil, nil, nil
 
     if type(opts) == "string" then
-      -- Simple color string
+      -- Simple color string, assume it's foreground
       fg = opts
     elseif type(opts) == "table" then
       fg = opts.fg or opts[1]
@@ -404,34 +467,57 @@ local function apply_custom_highlights(colors)
       -- Allow color references like "colors.primary"
       if fg and type(fg) == "string" and fg:match("^colors%.") then
         local color_key = fg:match("^colors%.(.+)$")
-        fg = colors[color_key]
+        fg = colors[color_key] or fg -- Fallback to original string if key not found
       end
       if bg and type(bg) == "string" and bg:match("^colors%.") then
         local color_key = bg:match("^colors%.(.+)$")
-        bg = colors[color_key]
+        bg = colors[color_key] or bg -- Fallback to original string if key not found
       end
     end
 
-    if fg or bg or style then
-      local cmd = "highlight " .. group
-      if fg then
-        cmd = cmd .. " guifg=" .. fg
-      end
-      if bg then
-        cmd = cmd .. " guibg=" .. bg
-      end
-      if style then
-        cmd = cmd .. " gui=" .. style
-      end
-      vim.cmd(cmd)
-    end
+    -- Use the centralized set_hl function to apply the custom highlight
+    set_hl(group, fg, bg, style)
+    ::continue:: -- Label for goto
+  end
+end
+
+--- Sets terminal colors based on Matugen's palette.
+--- @param colors table The table of color values (hex strings).
+local function set_terminal_colors(colors)
+  if not M.config.set_term_colors then
+    return
+  end
+
+  -- Map Matugen colors to standard 16 terminal colors
+  local term_colors = {
+    colors.surface_container_high, -- 0: Black (dark grey)
+    colors.error, -- 1: Red
+    colors.tertiary, -- 2: Green
+    colors.secondary, -- 3: Yellow
+    colors.primary, -- 4: Blue
+    colors.error_container, -- 5: Magenta
+    colors.secondary_container, -- 6: Cyan
+    colors.on_surface, -- 7: White (light grey)
+
+    colors.outline, -- 8: Bright Black (brighter dark grey)
+    colors.on_error, -- 9: Bright Red
+    colors.on_tertiary, -- 10: Bright Green
+    colors.on_secondary, -- 11: Bright Yellow
+    colors.on_primary, -- 12: Bright Blue
+    colors.on_error_container, -- 13: Bright Magenta
+    colors.on_secondary_container, -- 14: Bright Cyan
+    colors.on_background, -- 15: Bright White (white)
+  }
+
+  for i = 0, 15 do
+    vim.g["terminal_color_" .. i] = term_colors[i + 1]
   end
 end
 
 ---Loads the Matugen-generated colorscheme.
 function M.load_matugen_colorscheme()
   local colors_file_path = expand_path(M.config.file)
-  current_background_style = M.config.background_style
+  current_background_style = M.config.background_style -- Update global style
 
   if vim.fn.filereadable(colors_file_path) == 0 then
     vim.notify(
@@ -455,7 +541,7 @@ function M.load_matugen_colorscheme()
     return
   end
 
-  loaded_colors = colors
+  loaded_colors = colors -- Store loaded colors globally
   apply_base_highlights(loaded_colors, current_background_style)
 
   -- Apply Treesitter highlights immediately if available
@@ -463,8 +549,11 @@ function M.load_matugen_colorscheme()
     apply_treesitter_highlights(loaded_colors)
   end
 
-  -- Apply custom highlights last
+  -- Apply custom highlights last, allowing them to override previous settings
   apply_custom_highlights(loaded_colors)
+
+  -- Set terminal colors if enabled
+  set_terminal_colors(loaded_colors)
 
   if not M.config.disable_notifications then
     vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO, { title = "Matugen.nvim" })
@@ -479,16 +568,18 @@ function M.setup(opts)
     file = vim.fn.stdpath("cache") .. "/matugen/colors.jsonc",
     background_style = "dark", -- "dark" or "light"
     auto_load = true, -- Auto-load on VimEnter
-    disable_clear = false, -- Don't clear existing highlights
+    disable_clear = false, -- Don't clear existing highlights before applying
     disable_plugin_highlights = false, -- Don't apply plugin-specific highlights
     disable_treesitter_highlights = false, -- Don't apply Treesitter highlights
-    disable_notifications = false, -- Don't show notifications
+    disable_notifications = false, -- Don't show success notifications
     disable_generation_hint = false, -- Don't show generation hint when file not found
     ignore_groups = {}, -- Table of highlight groups to ignore: { "Normal" = true, "Comment" = true }
-    custom_highlights = {}, -- Custom highlight overrides
+    custom_highlights = {}, -- Custom highlight overrides: { "Normal" = { fg = "#RRGGBB", bg = "colors.surface", style = "bold" } }
+    transparent_background = false, -- Set background to NONE for UI elements (e.g., Normal, Float, StatusLine)
+    set_term_colors = true, -- Set terminal colors (terminal_color_0 to terminal_color_15) based on Matugen palette
   }
 
-  -- Handle both opts and config function patterns
+  -- Handle both opts table and config function patterns
   if type(opts) == "function" then
     opts = opts()
   end
@@ -499,7 +590,7 @@ function M.setup(opts)
   -- Validate configuration
   if M.config.background_style ~= "dark" and M.config.background_style ~= "light" then
     vim.notify(
-      "Invalid background_style: " .. M.config.background_style .. ". Using 'dark' instead.",
+      "Invalid background_style: '" .. M.config.background_style .. "'. Using 'dark' instead.",
       vim.log.levels.WARN,
       { title = "Matugen.nvim" }
     )
@@ -520,6 +611,7 @@ function M.setup(opts)
   })
 
   vim.api.nvim_create_user_command("MatugenColorschemeToggle", function()
+    -- Toggle the background style and reload
     M.config.background_style = M.config.background_style == "dark" and "light" or "dark"
     M.load_matugen_colorscheme()
   end, {
@@ -536,7 +628,9 @@ function M.setup(opts)
     })
   end
 
-  -- Autocmd for Treesitter-specific highlights
+  -- Autocmd for Treesitter-specific highlights and custom highlights
+  -- These need to be re-applied after a ColorScheme event, as other plugins
+  -- or Neovim itself might overwrite them.
   vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("MatugenTreesitterHighlights", { clear = true }),
     callback = function()
@@ -544,6 +638,7 @@ function M.setup(opts)
       if vim.g.colors_name == "matugen_colors" and next(loaded_colors) ~= nil then
         apply_treesitter_highlights(loaded_colors)
         apply_custom_highlights(loaded_colors)
+        set_terminal_colors(loaded_colors) -- Re-apply terminal colors if needed
       end
     end,
   })
@@ -560,8 +655,18 @@ function M.get_config()
 end
 
 -- Function to update configuration at runtime
+---@param new_opts table New options to merge into the current config.
 function M.update_config(new_opts)
   M.config = vim.tbl_deep_extend("force", M.config, new_opts or {})
+  -- Re-validate background_style after update
+  if M.config.background_style ~= "dark" and M.config.background_style ~= "light" then
+    vim.notify(
+      "Invalid background_style after update: '" .. M.config.background_style .. "'. Using 'dark' instead.",
+      vim.log.levels.WARN,
+      { title = "Matugen.nvim" }
+    )
+    M.config.background_style = "dark"
+  end
 end
 
 return M
