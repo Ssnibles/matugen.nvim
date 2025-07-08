@@ -4,7 +4,7 @@ local M = {}
 
 -- Global variable to store loaded colors
 local loaded_colors = {}
-local current_background_style = "dark" -- Store background style for later use
+local current_background_style = "dark"
 
 --- Helper to expand a path (like `~`)
 ---@param path string The path to expand
@@ -53,8 +53,13 @@ local function read_matugen_colors_file(file_path)
   return colors
 end
 
--- Helper for setting highlights
+-- Helper for setting highlights with override check
 local function set_hl(group, fg, bg, style)
+  -- Check if this group should be ignored (user override)
+  if M.config.ignore_groups and M.config.ignore_groups[group] then
+    return
+  end
+
   local cmd = "highlight " .. group
   if fg then
     cmd = cmd .. " guifg=" .. fg
@@ -68,15 +73,25 @@ local function set_hl(group, fg, bg, style)
   vim.cmd(cmd)
 end
 
+-- Helper for setting highlight links with override check
+local function set_hl_link(from, to)
+  if M.config.ignore_groups and M.config.ignore_groups[from] then
+    return
+  end
+  vim.cmd("highlight link " .. from .. " " .. to)
+end
+
 ---Applies general highlight groups based on the loaded colors.
----This runs first.
 ---@param colors table The table of color values (hex strings).
 ---@param background_style string "dark" or "light"
 local function apply_base_highlights(colors, background_style)
-  vim.cmd("highlight clear")
-  if vim.fn.exists("syntax_on") then
-    vim.cmd("syntax reset")
+  if not M.config.disable_clear then
+    vim.cmd("highlight clear")
+    if vim.fn.exists("syntax_on") then
+      vim.cmd("syntax reset")
+    end
   end
+
   vim.o.background = background_style
   vim.g.colors_name = "matugen_colors"
 
@@ -195,92 +210,97 @@ local function apply_base_highlights(colors, background_style)
   set_hl("Todo", colors.on_tertiary, colors.tertiary_container, "bold")
 
   -- Link common groups for consistency
-  vim.cmd("highlight link htmlTag Tag")
-  vim.cmd("highlight link htmlTagName Statement")
-  vim.cmd("highlight link cssTagName Statement")
-  vim.cmd("highlight link xmlTag Tag")
-  vim.cmd("highlight link rubyConstant Constant")
-  vim.cmd("highlight link pythonBuiltin Function")
-  vim.cmd("highlight link markdownCode Constant")
-  vim.cmd("highlight link markdownCodeBlock Constant")
-  vim.cmd("highlight link markdownBold Statement")
-  vim.cmd("highlight link markdownItalic Comment")
+  set_hl_link("htmlTag", "Tag")
+  set_hl_link("htmlTagName", "Statement")
+  set_hl_link("cssTagName", "Statement")
+  set_hl_link("xmlTag", "Tag")
+  set_hl_link("rubyConstant", "Constant")
+  set_hl_link("pythonBuiltin", "Function")
+  set_hl_link("markdownCode", "Constant")
+  set_hl_link("markdownCodeBlock", "Constant")
+  set_hl_link("markdownBold", "Statement")
+  set_hl_link("markdownItalic", "Comment")
   set_hl("markdownItalic", nil, nil, "italic")
-  vim.cmd("highlight link markdownLinkText Function")
-  vim.cmd("highlight link markdownLinkUrl Underlined")
-  vim.cmd("highlight link markdownHeading1 Title")
-  vim.cmd("highlight link markdownHeading2 Title")
+  set_hl_link("markdownLinkText", "Function")
+  set_hl_link("markdownLinkUrl", "Underlined")
+  set_hl_link("markdownHeading1", "Title")
+  set_hl_link("markdownHeading2", "Title")
 
-  -- Specific plugin highlights (non-Treesitter based)
-  -- NvimTree
-  set_hl("NvimTreeRoot", colors.primary, nil, "bold")
-  set_hl("NvimTreeFolderIcon", colors.secondary)
-  set_hl("NvimTreeGitDirty", colors.primary_container)
-  set_hl("NvimTreeGitNew", colors.tertiary_container)
-  set_hl("NvimTreeIndentMarker", colors.outline_variant)
-  set_hl("NvimTreeSymlink", colors.tertiary)
+  -- Plugin highlights (only if not disabled)
+  if not M.config.disable_plugin_highlights then
+    -- NvimTree
+    set_hl("NvimTreeRoot", colors.primary, nil, "bold")
+    set_hl("NvimTreeFolderIcon", colors.secondary)
+    set_hl("NvimTreeGitDirty", colors.primary_container)
+    set_hl("NvimTreeGitNew", colors.tertiary_container)
+    set_hl("NvimTreeIndentMarker", colors.outline_variant)
+    set_hl("NvimTreeSymlink", colors.tertiary)
 
-  -- Telescope
-  set_hl("TelescopeNormal", colors.on_surface, colors.surface_container_low or colors.surface)
-  set_hl("TelescopeBorder", colors.outline, colors.surface_container_low or colors.surface)
-  set_hl("TelescopePromptNormal", colors.on_surface, colors.surface_container_high or colors.surface)
-  set_hl("TelescopePromptBorder", colors.primary, colors.surface_container_high or colors.surface)
-  set_hl("TelescopePromptPrefix", colors.primary, colors.surface_container_high or colors.surface, "bold")
-  set_hl("TelescopeMatching", colors.primary, nil, "bold")
-  set_hl("TelescopeSelection", colors.on_primary_container, colors.primary_container)
+    -- Telescope
+    set_hl("TelescopeNormal", colors.on_surface, colors.surface_container_low or colors.surface)
+    set_hl("TelescopeBorder", colors.outline, colors.surface_container_low or colors.surface)
+    set_hl("TelescopePromptNormal", colors.on_surface, colors.surface_container_high or colors.surface)
+    set_hl("TelescopePromptBorder", colors.primary, colors.surface_container_high or colors.surface)
+    set_hl("TelescopePromptPrefix", colors.primary, colors.surface_container_high or colors.surface, "bold")
+    set_hl("TelescopeMatching", colors.primary, nil, "bold")
+    set_hl("TelescopeSelection", colors.on_primary_container, colors.primary_container)
 
-  -- Cmp (Completion)
-  set_hl("CmpBorder", colors.outline_variant, colors.surface_container_low or colors.surface)
-  set_hl("CmpMenu", colors.on_surface, colors.surface_container_low or colors.surface)
-  set_hl("CmpItemKind", colors.outline)
-  set_hl("CmpItemAbbr", colors.on_surface)
-  set_hl("CmpItemAbbrDeprecated", colors.outline_variant, nil, "strikethrough")
-  set_hl("CmpItemAbbrMatch", colors.primary, nil, "bold")
-  set_hl("CmpItemAbbrMatchFuzzy", colors.primary, nil, "underline")
-  set_hl("CmpItemMenu", colors.outline_variant)
-  set_hl("CmpItemSel", colors.on_primary, colors.primary)
-  set_hl("CmpDocBorder", colors.outline_variant, colors.surface_container or colors.surface)
-  set_hl("CmpDoc", colors.on_surface, colors.surface_container or colors.surface)
+    -- Cmp (Completion)
+    set_hl("CmpBorder", colors.outline_variant, colors.surface_container_low or colors.surface)
+    set_hl("CmpMenu", colors.on_surface, colors.surface_container_low or colors.surface)
+    set_hl("CmpItemKind", colors.outline)
+    set_hl("CmpItemAbbr", colors.on_surface)
+    set_hl("CmpItemAbbrDeprecated", colors.outline_variant, nil, "strikethrough")
+    set_hl("CmpItemAbbrMatch", colors.primary, nil, "bold")
+    set_hl("CmpItemAbbrMatchFuzzy", colors.primary, nil, "underline")
+    set_hl("CmpItemMenu", colors.outline_variant)
+    set_hl("CmpItemSel", colors.on_primary, colors.primary)
+    set_hl("CmpDocBorder", colors.outline_variant, colors.surface_container or colors.surface)
+    set_hl("CmpDoc", colors.on_surface, colors.surface_container or colors.surface)
 
-  -- Gitsigns
-  set_hl("GitSignsAdd", colors.tertiary, nil, "bold")
-  set_hl("GitSignsChange", colors.primary, nil, "bold")
-  set_hl("GitSignsDelete", colors.error, nil, "bold")
-  set_hl("GitSignsChangeDelete", colors.error, nil, "bold")
+    -- Gitsigns
+    set_hl("GitSignsAdd", colors.tertiary, nil, "bold")
+    set_hl("GitSignsChange", colors.primary, nil, "bold")
+    set_hl("GitSignsDelete", colors.error, nil, "bold")
+    set_hl("GitSignsChangeDelete", colors.error, nil, "bold")
 
-  -- Bufferline / Barbar (if used)
-  set_hl("BufferLineFill", colors.surface_container_lowest or colors.surface)
-  set_hl(
-    "BufferLineBuffer",
-    colors.on_surface_variant or colors.on_surface,
-    colors.surface_container_low or colors.surface
-  )
-  set_hl("BufferLineBufferSelected", colors.on_primary, colors.primary, "bold")
-  set_hl("BufferLineTabSeparator", colors.background, colors.surface_container_lowest or colors.surface)
-  set_hl("BufferLineBufferVisible", colors.on_surface, colors.surface_container or colors.surface)
+    -- Bufferline / Barbar
+    set_hl("BufferLineFill", colors.surface_container_lowest or colors.surface)
+    set_hl(
+      "BufferLineBuffer",
+      colors.on_surface_variant or colors.on_surface,
+      colors.surface_container_low or colors.surface
+    )
+    set_hl("BufferLineBufferSelected", colors.on_primary, colors.primary, "bold")
+    set_hl("BufferLineTabSeparator", colors.background, colors.surface_container_lowest or colors.surface)
+    set_hl("BufferLineBufferVisible", colors.on_surface, colors.surface_container or colors.surface)
 
-  -- LspSaga
-  set_hl("LspSagaBorderTitle", colors.primary)
-  set_hl("LspSagaBorder", colors.outline)
-  set_hl("LspSagaError", colors.error)
-  set_hl("LspSagaWarning", colors.primary)
-  set_hl("LspSagaInfo", colors.secondary)
-  set_hl("LspSagaHint", colors.tertiary)
-  set_hl("LspSagaDef", colors.primary)
-  set_hl("LspSagaTypeDefinition", colors.secondary)
-  set_hl("LspSagaDiagSource", colors.outline_variant)
-  set_hl("LspSagaCodeActionTitle", colors.primary)
-  set_hl("LspSagaCodeActionSelected", colors.on_primary, colors.primary)
+    -- LspSaga
+    set_hl("LspSagaBorderTitle", colors.primary)
+    set_hl("LspSagaBorder", colors.outline)
+    set_hl("LspSagaError", colors.error)
+    set_hl("LspSagaWarning", colors.primary)
+    set_hl("LspSagaInfo", colors.secondary)
+    set_hl("LspSagaHint", colors.tertiary)
+    set_hl("LspSagaDef", colors.primary)
+    set_hl("LspSagaTypeDefinition", colors.secondary)
+    set_hl("LspSagaDiagSource", colors.outline_variant)
+    set_hl("LspSagaCodeActionTitle", colors.primary)
+    set_hl("LspSagaCodeActionSelected", colors.on_primary, colors.primary)
+  end
 
   -- General links to standard groups
-  vim.cmd("highlight link CursorIM Normal")
+  set_hl_link("CursorIM", "Normal")
 end
 
 ---Applies Treesitter-specific highlight groups.
----This runs after the base highlights and after Treesitter has loaded.
 ---@param colors table The table of color values (hex strings).
 local function apply_treesitter_highlights(colors)
-  -- Treesitter highlight group links (Crucial for modern Neovim)
+  if M.config.disable_treesitter_highlights then
+    return
+  end
+
+  -- Treesitter highlight groups
   set_hl("@comment", colors.comment or colors.outline, nil, "italic")
   set_hl("@constant", colors.tertiary)
   set_hl("@constant.builtin", colors.tertiary_fixed or colors.tertiary)
@@ -363,10 +383,55 @@ local function apply_treesitter_highlights(colors)
   set_hl("@lsp.type.macro", colors.tertiary_container)
 end
 
+---Applies custom user highlight overrides
+---@param colors table The table of color values (hex strings).
+local function apply_custom_highlights(colors)
+  if not M.config.custom_highlights then
+    return
+  end
+
+  for group, opts in pairs(M.config.custom_highlights) do
+    local fg, bg, style = nil, nil, nil
+
+    if type(opts) == "string" then
+      -- Simple color string
+      fg = opts
+    elseif type(opts) == "table" then
+      fg = opts.fg or opts[1]
+      bg = opts.bg or opts[2]
+      style = opts.style or opts[3]
+
+      -- Allow color references like "colors.primary"
+      if fg and type(fg) == "string" and fg:match("^colors%.") then
+        local color_key = fg:match("^colors%.(.+)$")
+        fg = colors[color_key]
+      end
+      if bg and type(bg) == "string" and bg:match("^colors%.") then
+        local color_key = bg:match("^colors%.(.+)$")
+        bg = colors[color_key]
+      end
+    end
+
+    if fg or bg or style then
+      local cmd = "highlight " .. group
+      if fg then
+        cmd = cmd .. " guifg=" .. fg
+      end
+      if bg then
+        cmd = cmd .. " guibg=" .. bg
+      end
+      if style then
+        cmd = cmd .. " gui=" .. style
+      end
+      vim.cmd(cmd)
+    end
+  end
+end
+
 ---Loads the Matugen-generated colorscheme.
 function M.load_matugen_colorscheme()
   local colors_file_path = expand_path(M.config.file)
-  current_background_style = M.config.background_style -- Store for later use
+  current_background_style = M.config.background_style
 
   if vim.fn.filereadable(colors_file_path) == 0 then
     vim.notify(
@@ -374,12 +439,14 @@ function M.load_matugen_colorscheme()
       vim.log.levels.ERROR,
       { title = "Matugen.nvim" }
     )
-    vim.notify(
-      "Please generate it using Matugen, e.g.: matugen generate -i /path/to/your/image.jpg -t /path/to/your/template.jsonc -o "
-        .. colors_file_path,
-      vim.log.levels.INFO,
-      { title = "Matugen.nvim" }
-    )
+    if not M.config.disable_generation_hint then
+      vim.notify(
+        "Please generate it using Matugen, e.g.: matugen generate -i /path/to/your/image.jpg -t /path/to/your/template.jsonc -o "
+          .. colors_file_path,
+        vim.log.levels.INFO,
+        { title = "Matugen.nvim" }
+      )
+    end
     return
   end
 
@@ -396,35 +463,78 @@ function M.load_matugen_colorscheme()
     apply_treesitter_highlights(loaded_colors)
   end
 
-  vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO, { title = "Matugen.nvim" })
+  -- Apply custom highlights last
+  apply_custom_highlights(loaded_colors)
+
+  if not M.config.disable_notifications then
+    vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO, { title = "Matugen.nvim" })
+  end
 end
 
 ---Setup function for the plugin.
----@param opts table User configuration options.
+---@param opts table|nil User configuration options.
 function M.setup(opts)
   -- Default configuration
-  M.config = {
+  local defaults = {
     file = vim.fn.stdpath("cache") .. "/matugen/colors.jsonc",
-    background_style = "dark", -- Default, can be "light"
+    background_style = "dark", -- "dark" or "light"
+    auto_load = true, -- Auto-load on VimEnter
+    disable_clear = false, -- Don't clear existing highlights
+    disable_plugin_highlights = false, -- Don't apply plugin-specific highlights
+    disable_treesitter_highlights = false, -- Don't apply Treesitter highlights
+    disable_notifications = false, -- Don't show notifications
+    disable_generation_hint = false, -- Don't show generation hint when file not found
+    ignore_groups = {}, -- Table of highlight groups to ignore: { "Normal" = true, "Comment" = true }
+    custom_highlights = {}, -- Custom highlight overrides
   }
 
-  -- Merge user options
-  M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+  -- Handle both opts and config function patterns
+  if type(opts) == "function" then
+    opts = opts()
+  end
 
-  -- Define a user command to load the colorscheme
+  -- Merge user options with defaults
+  M.config = vim.tbl_deep_extend("force", defaults, opts or {})
+
+  -- Validate configuration
+  if M.config.background_style ~= "dark" and M.config.background_style ~= "light" then
+    vim.notify(
+      "Invalid background_style: " .. M.config.background_style .. ". Using 'dark' instead.",
+      vim.log.levels.WARN,
+      { title = "Matugen.nvim" }
+    )
+    M.config.background_style = "dark"
+  end
+
+  -- Define user commands
   vim.api.nvim_create_user_command("MatugenColorschemeLoad", function()
     M.load_matugen_colorscheme()
   end, {
     desc = "Load the Matugen-generated colorscheme",
   })
 
-  -- Autocmd to load on VimEnter
-  vim.api.nvim_create_autocmd("VimEnter", {
-    group = vim.api.nvim_create_augroup("MatugenColorschemeAutoLoad", { clear = true }),
-    callback = function()
-      M.load_matugen_colorscheme()
-    end,
+  vim.api.nvim_create_user_command("MatugenColorschemeReload", function()
+    M.load_matugen_colorscheme()
+  end, {
+    desc = "Reload the Matugen-generated colorscheme",
   })
+
+  vim.api.nvim_create_user_command("MatugenColorschemeToggle", function()
+    M.config.background_style = M.config.background_style == "dark" and "light" or "dark"
+    M.load_matugen_colorscheme()
+  end, {
+    desc = "Toggle between light and dark background styles",
+  })
+
+  -- Auto-load on VimEnter if enabled
+  if M.config.auto_load then
+    vim.api.nvim_create_autocmd("VimEnter", {
+      group = vim.api.nvim_create_augroup("MatugenColorschemeAutoLoad", { clear = true }),
+      callback = function()
+        M.load_matugen_colorscheme()
+      end,
+    })
+  end
 
   -- Autocmd for Treesitter-specific highlights
   vim.api.nvim_create_autocmd("ColorScheme", {
@@ -433,6 +543,7 @@ function M.setup(opts)
       -- Only apply if our colorscheme is active and we have loaded colors
       if vim.g.colors_name == "matugen_colors" and next(loaded_colors) ~= nil then
         apply_treesitter_highlights(loaded_colors)
+        apply_custom_highlights(loaded_colors)
       end
     end,
   })
@@ -441,6 +552,16 @@ end
 -- Function to get the currently loaded colors (useful for other plugins)
 function M.get_colors()
   return loaded_colors
+end
+
+-- Function to get the current config
+function M.get_config()
+  return M.config
+end
+
+-- Function to update configuration at runtime
+function M.update_config(new_opts)
+  M.config = vim.tbl_deep_extend("force", M.config, new_opts or {})
 end
 
 return M
