@@ -202,7 +202,6 @@ function M.load_matugen_colorscheme()
 
   loaded_colors = colors -- Store the loaded colors for potential external access
   apply_highlights(loaded_colors, M.config.background_style)
-  vim.cmd("colorscheme matugen_colors") -- Set the colorscheme name for display
   vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO, { title = "Matugen.nvim" })
 end
 
