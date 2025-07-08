@@ -1,37 +1,52 @@
--- ~/projects/matugen.nvim/lua/matugen_colorscheme/init.lua
+-- Ssnibles/matugen.nvim/lua/matugen_colorscheme/init.lua
 
 local M = {}
-
--- User configuration (defaults)
-M.config = {
-  -- Default path for the Matugen-generated colors JSON file
-  -- This is now the ONLY path the user needs to worry about for Matugen output
-  file = vim.fn.stdpath("cache") .. "/matugen/colors.json",
-  -- Option to choose background: "dark" or "light"
-  background_style = "dark", -- Default, but Matugen might imply this
-  -- You could add a path to the matugen executable here if you want to run it from Neovim
-  -- matugen_executable = "matugen",
-  -- image_path = "/path/to/your/default_image.jpg", -- If you want to integrate image picking
-  -- template_path = "/path/to/your/matugen_nvim_template.json", -- If you want to integrate template picking
-}
 
 -- Global variable to store loaded colors
 local loaded_colors = {}
 
----Reads and parses the Matugen-generated JSON file.
----@param file_path string The path to the JSON file.
+--- Helper to expand a path (like `~`)
+---@param path string The path to expand
+---@return string The expanded path
+local function expand_path(path)
+  -- Use vim.fn.expand() for robustness, it handles more than just '~'
+  -- If path is nil or not a string, return as is or handle error
+  if type(path) ~= "string" then
+    return path
+  end
+  return vim.fn.expand(path)
+end
+
+--- Strips comments from JSONC content.
+--- This is a simple regex-based stripper. For more robust parsing, a dedicated JSONC parser
+--- might be preferred, but this usually suffices for common single-line and multi-line comments.
+--- @param jsonc_content string The JSONC content as a string.
+--- @return string The JSON content without comments.
+local function strip_jsonc_comments(jsonc_content)
+  -- Remove multi-line comments /* ... */
+  local without_block_comments = jsonc_content:gsub("/%*%X*?%*/", "")
+  -- Remove single-line comments // ...
+  local without_comments = without_block_comments:gsub("//[^\n\r]*", "")
+  return without_comments
+end
+
+---Reads and parses the Matugen-generated JSONC file.
+---@param file_path string The path to the JSONC file.
 ---@return table|nil The parsed colors table, or nil if an error occurred.
 local function read_matugen_colors_file(file_path)
   local f = io.open(file_path, "r")
   if not f then
-    vim.notify("Could not open Matugen colors file: " .. file_path, vim.log.levels.ERROR)
+    vim.notify("Matugen colors file not found at: " .. file_path, vim.log.levels.ERROR)
     return nil
   end
 
   local content = f:read("*a")
   f:close()
 
-  local success, colors = pcall(vim.json.decode, content)
+  -- Strip comments before decoding JSON
+  local json_content = strip_jsonc_comments(content)
+
+  local success, colors = pcall(vim.json.decode, json_content)
   if not success then
     vim.notify("Error decoding Matugen colors JSON from " .. file_path .. ": " .. colors, vim.log.levels.ERROR)
     return nil
@@ -42,12 +57,13 @@ end
 
 ---Applies highlight groups based on the loaded colors.
 ---@param colors table The table of color values (hex strings).
-local function apply_highlights(colors)
+---@param background_style string "dark" or "light"
+local function apply_highlights(colors, background_style)
   vim.cmd("highlight clear")
   if vim.fn.exists("syntax_on") then
     vim.cmd("syntax reset")
   end
-  vim.o.background = M.config.background_style -- Use the configured background style
+  vim.o.background = background_style -- Use the configured background style
 
   local function set_hl(group, fg, bg, style)
     local cmd = "highlight " .. group
@@ -63,7 +79,7 @@ local function apply_highlights(colors)
     vim.cmd(cmd)
   end
 
-  -- General UI elements (using 'colors' table directly)
+  -- General UI elements
   set_hl("Normal", colors.on_background, colors.background)
   set_hl("NormalFloat", colors.on_surface, colors.surface)
   set_hl("FloatBorder", colors.on_surface_variant, colors.surface)
@@ -161,14 +177,19 @@ end
 
 ---Loads the Matugen-generated colorscheme.
 function M.load_matugen_colorscheme()
-  local colors_file_path = M.config.file
+  local colors_file_path = expand_path(M.config.file) -- Auto-expand the path
 
   if vim.fn.filereadable(colors_file_path) == 0 then
-    vim.notify("Matugen colors file not found at: " .. colors_file_path, vim.log.levels.ERROR)
     vim.notify(
-      "Please generate it using Matugen, e.g.: matugen generate -i /path/to/your/image.jpg -t /path/to/your/template.json -o "
+      "Matugen colors file not found at: " .. colors_file_path,
+      vim.log.levels.ERROR,
+      { title = "Matugen.nvim" }
+    )
+    vim.notify(
+      "Please generate it using Matugen, e.g.: matugen generate -i /path/to/your/image.jpg -t /path/to/your/template.jsonc -o "
         .. colors_file_path,
-      vim.log.levels.INFO
+      vim.log.levels.INFO,
+      { title = "Matugen.nvim" }
     )
     return
   end
@@ -180,14 +201,21 @@ function M.load_matugen_colorscheme()
   end
 
   loaded_colors = colors -- Store the loaded colors for potential external access
-  apply_highlights(loaded_colors)
+  apply_highlights(loaded_colors, M.config.background_style)
   vim.cmd("colorscheme matugen_colors") -- Set the colorscheme name for display
-  vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO)
+  vim.notify("Matugen colorscheme loaded successfully!", vim.log.levels.INFO, { title = "Matugen.nvim" })
 end
 
 ---Setup function for the plugin.
 ---@param opts table User configuration options.
 function M.setup(opts)
+  -- Default configuration
+  M.config = {
+    file = vim.fn.stdpath("cache") .. "/matugen/colors.jsonc", -- Default path
+    background_style = "dark", -- Default, can be "light"
+  }
+
+  -- Merge user options
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
   -- Define a user command to load the colorscheme
@@ -197,7 +225,7 @@ function M.setup(opts)
     desc = "Load the Matugen-generated colorscheme",
   })
 
-  -- You might want to auto-load it on VimEnter
+  -- Autocmd to load on VimEnter (can be disabled by user if they want to call it manually)
   vim.api.nvim_create_autocmd("VimEnter", {
     group = vim.api.nvim_create_augroup("MatugenColorschemeAutoLoad", { clear = true }),
     callback = function()
