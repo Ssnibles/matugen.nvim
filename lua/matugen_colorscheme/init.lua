@@ -124,8 +124,8 @@ local function apply_base_highlights(colors, background_style)
   set_hl("NormalNC", colors.on_surface_variant, bg_normal) -- Normal for non-current windows
   set_hl("NormalFloat", colors.on_surface, bg_float)
   set_hl("FloatBorder", colors.outline_variant, bg_float)
-  set_hl("VertSplit", colors.outline_variant, bg_normal)
-  set_hl("WinSeparator", colors.outline_variant, bg_normal) -- Link to VertSplit for consistency
+  set_hl("VertSplit", colors.outline, bg_normal) -- Changed to outline for better visibility
+  set_hl("WinSeparator", colors.outline, bg_normal) -- Linked to VertSplit for consistency
   set_hl("Pmenu", colors.on_surface, bg_pmenu)
   set_hl("PmenuSel", colors.on_primary, colors.primary)
   set_hl("PmenuSbar", nil, bg_pmenu)
@@ -166,10 +166,10 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("LspDiagnosticsHint", "HintMsg")
 
   -- Diffs
-  set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container)
-  set_hl("DiffChange", colors.on_primary_container, colors.primary_container)
-  set_hl("DiffDelete", colors.on_error_container, colors.error_container)
-  set_hl("DiffText", colors.on_secondary_container, colors.secondary_container)
+  set_hl("DiffAdd", colors.tertiary, colors.tertiary_container) -- Changed fg to tertiary
+  set_hl("DiffChange", colors.primary, colors.primary_container) -- Changed fg to primary
+  set_hl("DiffDelete", colors.error, colors.error_container) -- Changed fg to error
+  set_hl("DiffText", colors.secondary, colors.secondary_container) -- Changed fg to secondary
 
   -- Statusline and Tabline
   set_hl("StatusLine", colors.on_surface, bg_statusline)
@@ -212,28 +212,28 @@ local function apply_base_highlights(colors, background_style)
   set_hl("Number", colors.tertiary)
   set_hl("Boolean", colors.tertiary)
   set_hl("Float", colors.tertiary)
-  set_hl("Identifier", colors.primary_container)
+  set_hl("Identifier", colors.on_background) -- Changed to on_background for general text
   set_hl("Function", colors.primary)
   set_hl("Statement", colors.primary, nil, "bold")
   set_hl("Conditional", colors.primary)
   set_hl("Repeat", colors.primary)
   set_hl("Label", colors.primary_fixed_dim or colors.primary)
-  set_hl("Operator", colors.outline)
+  set_hl("Operator", colors.outline) -- Changed to outline
   set_hl("Keyword", colors.primary)
   set_hl("Exception", colors.error)
-  set_hl("PreProc", colors.secondary)
-  set_hl("Include", colors.secondary)
-  set_hl("Define", colors.secondary)
-  set_hl("Macro", colors.secondary)
-  set_hl("PreCondit", colors.secondary)
-  set_hl("Type", colors.tertiary_fixed or colors.tertiary)
-  set_hl("StorageClass", colors.tertiary_fixed or colors.tertiary)
-  set_hl("Structure", colors.tertiary_fixed or colors.tertiary)
-  set_hl("Typedef", colors.tertiary_fixed or colors.tertiary)
+  set_hl("PreProc", colors.secondary) -- Changed to secondary
+  set_hl("Include", colors.secondary) -- Changed to secondary
+  set_hl("Define", colors.secondary) -- Changed to secondary
+  set_hl("Macro", colors.secondary) -- Changed to secondary
+  set_hl("PreCondit", colors.secondary) -- Changed to secondary
+  set_hl("Type", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
+  set_hl("StorageClass", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
+  set_hl("Structure", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
+  set_hl("Typedef", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
   set_hl("Special", colors.tertiary_container)
   set_hl("SpecialChar", colors.tertiary_container)
   set_hl("Tag", colors.tertiary_container)
-  set_hl("Delimiter", colors.outline)
+  set_hl("Delimiter", colors.outline) -- Changed to outline
   set_hl("SpecialComment", colors.tertiary, nil, "italic")
   set_hl("Underlined", nil, nil, "underline")
   set_hl("Ignore", colors.background, colors.background)
@@ -401,9 +401,10 @@ local function apply_treesitter_highlights(colors)
   set_hl("@text.uri", colors.tertiary, nil, "underline")
   set_hl("@text.underline", nil, nil, "underline")
   set_hl("@text.todo", colors.on_tertiary, colors.tertiary_container, "bold")
-  set_hl("@text.warning", colors.on_primary_container, colors.primary_container)
-  set_hl("@text.danger", colors.on_error, colors.error_container)
-  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container)
+  set_hl("@text.warning", colors.on_primary_container, colors.primary_container) -- Linked to WarningMsg
+  set_hl("@text.danger", colors.on_error, colors.error_container) -- Linked to ErrorMsg
+  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container) -- Linked to InfoMsg
+  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container) -- Linked to HintMsg
 
   set_hl("@markup.heading", colors.primary, nil, "bold")
   set_hl("@markup.raw", colors.secondary_container)
