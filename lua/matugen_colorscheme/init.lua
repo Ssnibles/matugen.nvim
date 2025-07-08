@@ -128,7 +128,7 @@ local function apply_highlights(colors, background_style)
   set_hl("SpecialComment", colors.tertiary_container)
   set_hl("Debug", colors.error)
   set_hl("Underlined", nil, nil, "underline")
-  set_hl("Ignore", nil, nil, "invisible")
+  set_hl("Ignore", colors.background, colors.background)
   set_hl("Error", colors.on_error, colors.error)
   set_hl("Todo", colors.on_primary_container, colors.primary_container, "bold")
 
