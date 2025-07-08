@@ -124,8 +124,8 @@ local function apply_base_highlights(colors, background_style)
   set_hl("NormalNC", colors.on_surface_variant, bg_normal) -- Normal for non-current windows
   set_hl("NormalFloat", colors.on_surface, bg_float)
   set_hl("FloatBorder", colors.outline_variant, bg_float)
-  set_hl("VertSplit", colors.outline, bg_normal) -- Changed to outline for better visibility
-  set_hl("WinSeparator", colors.outline, bg_normal) -- Linked to VertSplit for consistency
+  set_hl("VertSplit", colors.outline, bg_normal)
+  set_hl("WinSeparator", colors.outline, bg_normal)
   set_hl("Pmenu", colors.on_surface, bg_pmenu)
   set_hl("PmenuSel", colors.on_primary, colors.primary)
   set_hl("PmenuSbar", nil, bg_pmenu)
@@ -135,15 +135,15 @@ local function apply_base_highlights(colors, background_style)
 
   -- Line Numbers, Sign Column, Fold Column
   set_hl("LineNr", colors.outline, bg_normal)
-  set_hl("LineNrAbove", colors.outline, bg_normal) -- For relative line numbers above cursor
-  set_hl("LineNrBelow", colors.outline, bg_normal) -- For relative line numbers below cursor
+  set_hl("LineNrAbove", colors.outline, bg_normal)
+  set_hl("LineNrBelow", colors.outline, bg_normal)
   set_hl("SignColumn", colors.outline, bg_normal)
   set_hl("FoldColumn", colors.outline, bg_normal)
 
   -- Cursorline and Number
   set_hl("CursorLine", nil, bg_cursorline)
   set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold")
-  set_hl("CursorColumn", nil, bg_cursorline) -- Highlight for cursor column
+  set_hl("CursorColumn", nil, bg_cursorline)
 
   -- Visual mode selection
   set_hl("Visual", nil, bg_visual)
@@ -166,10 +166,10 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("LspDiagnosticsHint", "HintMsg")
 
   -- Diffs
-  set_hl("DiffAdd", colors.tertiary, colors.tertiary_container) -- Changed fg to tertiary
-  set_hl("DiffChange", colors.primary, colors.primary_container) -- Changed fg to primary
-  set_hl("DiffDelete", colors.error, colors.error_container) -- Changed fg to error
-  set_hl("DiffText", colors.secondary, colors.secondary_container) -- Changed fg to secondary
+  set_hl("DiffAdd", colors.tertiary, colors.tertiary_container)
+  set_hl("DiffChange", colors.primary, colors.primary_container)
+  set_hl("DiffDelete", colors.error, colors.error_container)
+  set_hl("DiffText", colors.secondary, colors.secondary_container)
 
   -- Statusline and Tabline
   set_hl("StatusLine", colors.on_surface, bg_statusline)
@@ -201,8 +201,8 @@ local function apply_base_highlights(colors, background_style)
   set_hl("MoreMsg", colors.tertiary)
   set_hl("Question", colors.secondary)
   set_hl("Folded", colors.on_surface_variant or colors.on_surface, bg_statusline, "italic")
-  set_hl("EndOfBuffer", colors.outline_variant) -- For '~' at end of buffer
-  set_hl("SpecialKey", colors.outline_variant) -- For special characters like tabs
+  set_hl("EndOfBuffer", colors.outline_variant)
+  set_hl("SpecialKey", colors.outline_variant)
 
   -- Basic Syntax Highlighting (often falls back if TS is not active)
   set_hl("Comment", colors.comment or colors.outline, nil, "italic")
@@ -212,28 +212,28 @@ local function apply_base_highlights(colors, background_style)
   set_hl("Number", colors.tertiary)
   set_hl("Boolean", colors.tertiary)
   set_hl("Float", colors.tertiary)
-  set_hl("Identifier", colors.on_background) -- Changed to on_background for general text
+  set_hl("Identifier", colors.on_background)
   set_hl("Function", colors.primary)
   set_hl("Statement", colors.primary, nil, "bold")
   set_hl("Conditional", colors.primary)
   set_hl("Repeat", colors.primary)
   set_hl("Label", colors.primary_fixed_dim or colors.primary)
-  set_hl("Operator", colors.outline) -- Changed to outline
+  set_hl("Operator", colors.outline)
   set_hl("Keyword", colors.primary)
   set_hl("Exception", colors.error)
-  set_hl("PreProc", colors.secondary) -- Changed to secondary
-  set_hl("Include", colors.secondary) -- Changed to secondary
-  set_hl("Define", colors.secondary) -- Changed to secondary
-  set_hl("Macro", colors.secondary) -- Changed to secondary
-  set_hl("PreCondit", colors.secondary) -- Changed to secondary
-  set_hl("Type", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("StorageClass", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("Structure", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("Typedef", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
+  set_hl("PreProc", colors.secondary)
+  set_hl("Include", colors.secondary)
+  set_hl("Define", colors.secondary)
+  set_hl("Macro", colors.secondary)
+  set_hl("PreCondit", colors.secondary)
+  set_hl("Type", colors.secondary_fixed or colors.secondary)
+  set_hl("StorageClass", colors.secondary_fixed or colors.secondary)
+  set_hl("Structure", colors.secondary_fixed or colors.secondary)
+  set_hl("Typedef", colors.secondary_fixed or colors.secondary)
   set_hl("Special", colors.tertiary_container)
   set_hl("SpecialChar", colors.tertiary_container)
   set_hl("Tag", colors.tertiary_container)
-  set_hl("Delimiter", colors.outline) -- Changed to outline
+  set_hl("Delimiter", colors.outline)
   set_hl("SpecialComment", colors.tertiary, nil, "italic")
   set_hl("Underlined", nil, nil, "underline")
   set_hl("Ignore", colors.background, colors.background)
@@ -255,99 +255,6 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownLinkUrl", "Underlined")
   set_hl_link("markdownHeading1", "Title")
   set_hl_link("markdownHeading2", "Title")
-
-  -- Plugin highlights (only if not disabled)
-  if not M.config.disable_plugin_highlights then
-    -- NvimTree
-    set_hl("NvimTreeRoot", colors.primary, nil, "bold")
-    set_hl("NvimTreeFolderIcon", colors.secondary)
-    set_hl("NvimTreeGitDirty", colors.primary_container)
-    set_hl("NvimTreeGitNew", colors.tertiary_container)
-    set_hl("NvimTreeIndentMarker", colors.outline_variant)
-    set_hl("NvimTreeSymlink", colors.tertiary)
-
-    -- Telescope
-    set_hl("TelescopeNormal", colors.on_surface, bg_float)
-    set_hl("TelescopeBorder", colors.outline, bg_float)
-    set_hl("TelescopePromptNormal", colors.on_surface, bg_statusline)
-    set_hl("TelescopePromptBorder", colors.primary, bg_statusline)
-    set_hl("TelescopePromptPrefix", colors.primary, bg_statusline, "bold")
-    set_hl("TelescopeMatching", colors.primary, nil, "bold")
-    set_hl("TelescopeSelection", colors.on_primary_container, colors.primary_container)
-    set_hl_link("TelescopeResultsNormal", "NormalFloat")
-    set_hl_link("TelescopeResultsSelection", "TelescopeSelection")
-
-    -- Cmp (Completion)
-    set_hl("CmpBorder", colors.outline_variant, bg_float)
-    set_hl("CmpMenu", colors.on_surface, bg_float)
-    set_hl("CmpItemKind", colors.outline) -- Default kind color
-    set_hl("CmpItemKindText", colors.on_surface)
-    set_hl("CmpItemKindMethod", colors.primary)
-    set_hl("CmpItemKindFunction", colors.primary)
-    set_hl("CmpItemKindConstructor", colors.primary)
-    set_hl("CmpItemKindField", colors.primary_container)
-    set_hl("CmpItemKindVariable", colors.on_background)
-    set_hl("CmpItemKindClass", colors.secondary_fixed or colors.secondary)
-    set_hl("CmpItemKindInterface", colors.secondary_fixed or colors.secondary)
-    set_hl("CmpItemKindModule", colors.secondary)
-    set_hl("CmpItemKindProperty", colors.primary_container)
-    set_hl("CmpItemKindUnit", colors.tertiary)
-    set_hl("CmpItemKindValue", colors.tertiary)
-    set_hl("CmpItemKindEnum", colors.secondary_fixed or colors.secondary)
-    set_hl("CmpItemKindKeyword", colors.primary)
-    set_hl("CmpItemKindSnippet", colors.tertiary_container)
-    set_hl("CmpItemKindColor", colors.tertiary)
-    set_hl("CmpItemKindFile", colors.primary_container)
-    set_hl("CmpItemKindReference", colors.primary)
-    set_hl("CmpItemKindFolder", colors.secondary)
-    set_hl("CmpItemKindEnumMember", colors.tertiary)
-    set_hl("CmpItemKindConstant", colors.tertiary)
-    set_hl("CmpItemKindStruct", colors.secondary_fixed or colors.secondary)
-    set_hl("CmpItemKindEvent", colors.tertiary_fixed or colors.tertiary)
-    set_hl("CmpItemKindOperator", colors.outline)
-    set_hl("CmpItemKindTypeParameter", colors.secondary_fixed or colors.secondary)
-    set_hl("CmpItemAbbr", colors.on_surface)
-    set_hl("CmpItemAbbrDeprecated", colors.outline_variant, nil, "strikethrough")
-    set_hl("CmpItemAbbrMatch", colors.primary, nil, "bold")
-    set_hl("CmpItemAbbrMatchFuzzy", colors.primary, nil, "underline")
-    set_hl("CmpItemMenu", colors.outline_variant)
-    set_hl("CmpItemSel", colors.on_primary, colors.primary)
-    set_hl("CmpDocBorder", colors.outline_variant, bg_pmenu)
-    set_hl("CmpDoc", colors.on_surface, bg_pmenu)
-
-    -- Gitsigns
-    set_hl("GitSignsAdd", colors.tertiary, nil, "bold")
-    set_hl("GitSignsChange", colors.primary, nil, "bold")
-    set_hl("GitSignsDelete", colors.error, nil, "bold")
-    set_hl("GitSignsChangeDelete", colors.error, nil, "bold")
-
-    -- Bufferline / Barbar
-    set_hl("BufferLineFill", bg_tabline)
-    set_hl(
-      "BufferLineBuffer",
-      colors.on_surface_variant or colors.on_surface,
-      bg_float -- Use float background for inactive buffers
-    )
-    set_hl("BufferLineBufferSelected", colors.on_primary, colors.primary, "bold")
-    set_hl("BufferLineTabSeparator", colors.background, bg_tabline)
-    set_hl("BufferLineBufferVisible", colors.on_surface, bg_pmenu) -- Use pmenu background for visible but not selected
-
-    -- LspSaga
-    set_hl("LspSagaBorderTitle", colors.primary)
-    set_hl("LspSagaBorder", colors.outline)
-    set_hl("LspSagaError", colors.error)
-    set_hl("LspSagaWarning", colors.primary)
-    set_hl("LspSagaInfo", colors.secondary)
-    set_hl("LspSagaHint", colors.tertiary)
-    set_hl("LspSagaDef", colors.primary)
-    set_hl("LspSagaTypeDefinition", colors.secondary)
-    set_hl("LspSagaDiagSource", colors.outline_variant)
-    set_hl("LspSagaCodeActionTitle", colors.primary)
-    set_hl("LspSagaCodeActionSelected", colors.on_primary, colors.primary)
-  end
-
-  -- General links to standard groups
-  set_hl_link("CursorIM", "Normal")
 end
 
 --- Applies Treesitter-specific highlight groups.
@@ -401,10 +308,10 @@ local function apply_treesitter_highlights(colors)
   set_hl("@text.uri", colors.tertiary, nil, "underline")
   set_hl("@text.underline", nil, nil, "underline")
   set_hl("@text.todo", colors.on_tertiary, colors.tertiary_container, "bold")
-  set_hl("@text.warning", colors.on_primary_container, colors.primary_container) -- Linked to WarningMsg
-  set_hl("@text.danger", colors.on_error, colors.error_container) -- Linked to ErrorMsg
-  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container) -- Linked to InfoMsg
-  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container) -- Linked to HintMsg
+  set_hl("@text.warning", colors.on_primary_container, colors.primary_container)
+  set_hl("@text.danger", colors.on_error, colors.error_container)
+  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container)
+  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container)
 
   set_hl("@markup.heading", colors.primary, nil, "bold")
   set_hl("@markup.raw", colors.secondary_container)
@@ -515,6 +422,60 @@ local function set_terminal_colors(colors)
   end
 end
 
+--- Applies plugin-specific highlight groups by loading modules from the 'plugins' directory.
+--- @param colors table The table of color values (hex strings).
+local function apply_plugin_highlights(colors)
+  if M.config.disable_plugin_highlights then
+    return
+  end
+
+  -- Get the directory of the current script (init.lua)
+  -- This assumes init.lua is in lua/matugen_colorscheme/
+  local script_path = debug.getinfo(1, "S").source:match("(.*/)")
+  local plugin_dir = script_path .. "plugins"
+
+  -- Ensure the plugin directory exists before trying to read it
+  if vim.fn.isdirectory(plugin_dir) == 0 then
+    vim.notify(
+      "Matugen.nvim: Plugins directory not found at: " .. plugin_dir,
+      vim.log.levels.WARN,
+      { title = "Matugen.nvim" }
+    )
+    return
+  end
+
+  local plugin_files = vim.fn.readdir(plugin_dir)
+
+  if not plugin_files then
+    vim.notify(
+      "Matugen.nvim: Could not read plugins directory: " .. plugin_dir,
+      vim.log.levels.WARN,
+      { title = "Matugen.nvim" }
+    )
+    return
+  end
+
+  for _, filename in ipairs(plugin_files) do
+    if filename:match("%.lua$") then
+      local module_name = filename:gsub("%.lua$", "")
+      -- Construct the full Lua module path
+      -- e.g., "matugen_colorscheme.plugins.lualine"
+      local full_module_path = "matugen_colorscheme.plugins." .. module_name
+      local success, plugin_module = pcall(require, full_module_path)
+      if success and type(plugin_module) == "table" and type(plugin_module.apply) == "function" then
+        -- Call the apply function of the plugin module, passing necessary helpers and data
+        plugin_module.apply(set_hl, set_hl_link, colors, M.config)
+      elseif not success then
+        vim.notify(
+          "Matugen.nvim: Error loading plugin module '" .. full_module_path .. "': " .. plugin_module,
+          vim.log.levels.ERROR,
+          { title = "Matugen.nvim" }
+        )
+      end
+    end
+  end
+end
+
 ---Loads the Matugen-generated colorscheme.
 function M.load_matugen_colorscheme()
   local colors_file_path = expand_path(M.config.file)
@@ -549,6 +510,9 @@ function M.load_matugen_colorscheme()
   if vim.treesitter and vim.treesitter.highlighter then
     apply_treesitter_highlights(loaded_colors)
   end
+
+  -- Apply plugin-specific highlights
+  apply_plugin_highlights(loaded_colors)
 
   -- Apply custom highlights last, allowing them to override previous settings
   apply_custom_highlights(loaded_colors)
@@ -638,6 +602,7 @@ function M.setup(opts)
       -- Only apply if our colorscheme is active and we have loaded colors
       if vim.g.colors_name == "matugen_colors" and next(loaded_colors) ~= nil then
         apply_treesitter_highlights(loaded_colors)
+        apply_plugin_highlights(loaded_colors) -- Re-apply plugin highlights
         apply_custom_highlights(loaded_colors)
         set_terminal_colors(loaded_colors) -- Re-apply terminal colors if needed
       end
