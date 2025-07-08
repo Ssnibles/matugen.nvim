@@ -356,6 +356,18 @@ local function apply_base_highlights(colors, background_style)
     set_hl("LspSagaDiagSource", colors.outline_variant)
     set_hl("LspSagaCodeActionTitle", colors.primary)
     set_hl("LspSagaCodeActionSelected", colors.on_primary, colors.primary)
+
+    -- Lualine (explicitly define mode highlight groups for contrast)
+    -- These are crucial for a clear mode indication.
+    set_hl("LualineNormal", colors.on_primary, colors.primary, "bold") -- Very prominent for Normal mode
+    set_hl("LualineInsert", colors.on_tertiary, colors.tertiary, "bold") -- Greenish for Insert
+    set_hl("LualineVisual", colors.on_secondary, colors.secondary, "bold") -- Yellowish/Orange for Visual
+    set_hl("LualineReplace", colors.on_error, colors.error, "bold") -- Red for Replace (like error)
+    set_hl("LualineCommand", colors.on_primary_container, colors.primary_container, "bold") -- Slightly muted primary for Cmd
+    set_hl("LualineTerminal", colors.on_secondary_container, colors.secondary_container, "bold") -- Cyanish for Terminal
+    set_hl("LualineStatusLine", colors.on_surface, bg_statusline) -- Default Lualine section bg/fg
+    set_hl("LualineStatusLineNC", colors.outline, bg_float) -- Inactive Lualine statusline
+    set_hl("LualineSpecial", colors.primary_fixed_dim) -- For special symbols/separators in Lualine
   end
 
   -- General links to standard groups
