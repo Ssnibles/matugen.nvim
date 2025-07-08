@@ -194,8 +194,8 @@ local function apply_base_highlights(colors, background_style)
   vim.cmd("highlight link markdownCode Constant")
   vim.cmd("highlight link markdownCodeBlock Constant")
   vim.cmd("highlight link markdownBold Statement")
-  vim_cmd("highlight link markdownItalic Comment") -- This one was `vim.cmd("highlight link markdownItalic Comment")` - typo here? I'll assume it was intended to be `set_hl` for consistency
-  set_hl("markdownItalic", nil, nil, "italic") -- Better to just define it if it's a direct highlight
+  vim_cmd("highlight link markdownItalic Comment")
+  set_hl("markdownItalic", nil, nil, "italic")
   vim.cmd("highlight link markdownLinkText Function")
   vim.cmd("highlight link markdownLinkUrl Underlined")
   vim.cmd("highlight link markdownHeading1 Title")
