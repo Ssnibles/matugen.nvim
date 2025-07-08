@@ -117,7 +117,7 @@ local function apply_base_highlights(colors, background_style)
   local bg_cursorline = M.config.transparent_background and "NONE" or (colors.surface_container_low or colors.surface)
   local bg_cmdline = M.config.transparent_background and "NONE" or colors.background
   local bg_col_line = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
-  local bg_visual = M.config.transparent_background and "NONE" or colors.surface_variant
+  local bg_visual = M.config.transparent_background and "NONE" or colors.surface_variant -- Use surface_variant for visual selection
 
   -- Base Neovim UI Colors
   set_hl("Normal", colors.on_background, bg_normal)
@@ -134,7 +134,7 @@ local function apply_base_highlights(colors, background_style)
   set_hl("FloatHeader", colors.on_surface, bg_float)
 
   -- Line Numbers, Sign Column, Fold Column
-  set_hl("LineNr", colors.outline, bg_normal)
+  set_hl("LineNr", colors.outline, bg_normal) -- Subtle outline for line numbers
   set_hl("LineNrAbove", colors.outline, bg_normal) -- For relative line numbers above cursor
   set_hl("LineNrBelow", colors.outline, bg_normal) -- For relative line numbers below cursor
   set_hl("SignColumn", colors.outline, bg_normal)
@@ -142,7 +142,7 @@ local function apply_base_highlights(colors, background_style)
 
   -- Cursorline and Number
   set_hl("CursorLine", nil, bg_cursorline)
-  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold")
+  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold") -- Primary for active line number
   set_hl("CursorColumn", nil, bg_cursorline) -- Highlight for cursor column
 
   -- Visual mode selection
@@ -150,11 +150,11 @@ local function apply_base_highlights(colors, background_style)
   set_hl("VisualNOS", nil, bg_visual)
 
   -- Search and IncSearch
-  set_hl("IncSearch", colors.on_secondary, colors.secondary_container, "bold")
-  set_hl("Search", colors.on_tertiary, colors.tertiary_container)
+  set_hl("IncSearch", colors.on_secondary, colors.secondary_container, "bold") -- Stronger contrast for incremental search
+  set_hl("Search", colors.on_tertiary, colors.tertiary_container) -- Distinct color for search results
 
   -- Diagnostics (errors, warnings, info, hints)
-  set_hl("ErrorMsg", colors.on_error, colors.error_container, "bold")
+  set_hl("ErrorMsg", colors.on_error, colors.error, "bold") -- Use error as background for strong emphasis
   set_hl("WarningMsg", colors.on_primary_container, colors.primary_container, "bold")
   set_hl("InfoMsg", colors.on_secondary_container, colors.secondary_container)
   set_hl("HintMsg", colors.on_tertiary_container, colors.tertiary_container)
@@ -166,14 +166,14 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("LspDiagnosticsHint", "HintMsg")
 
   -- Diffs
-  set_hl("DiffAdd", colors.tertiary, colors.tertiary_container) -- Changed fg to tertiary
-  set_hl("DiffChange", colors.primary, colors.primary_container) -- Changed fg to primary
-  set_hl("DiffDelete", colors.error, colors.error_container) -- Changed fg to error
-  set_hl("DiffText", colors.secondary, colors.secondary_container) -- Changed fg to secondary
+  set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container) -- Use on_tertiary_container for fg
+  set_hl("DiffChange", colors.on_primary_container, colors.primary_container) -- Use on_primary_container for fg
+  set_hl("DiffDelete", colors.on_error_container, colors.error_container) -- Use on_error_container for fg
+  set_hl("DiffText", colors.on_secondary_container, colors.secondary_container) -- Use on_secondary_container for fg
 
   -- Statusline and Tabline
   set_hl("StatusLine", colors.on_surface, bg_statusline)
-  set_hl("StatusLineNC", colors.outline, bg_float)
+  set_hl("StatusLineNC", colors.outline, bg_float) -- Use float background for inactive statusline
   set_hl("TabLine", colors.on_surface_variant or colors.on_surface, bg_tabline)
   set_hl("TabLineFill", colors.on_surface_variant or colors.on_surface, bg_tabline)
   set_hl("TabLineSel", colors.on_primary, colors.primary, "bold")
@@ -195,7 +195,7 @@ local function apply_base_highlights(colors, background_style)
   set_hl("NonText", colors.outline_variant)
   set_hl("Whitespace", colors.outline_variant)
   set_hl("Conceal", colors.outline_variant)
-  set_hl("Directory", colors.primary)
+  set_hl("Directory", colors.primary) -- Primary for directories
   set_hl("Title", colors.primary)
   set_hl("ModeMsg", colors.primary_container)
   set_hl("MoreMsg", colors.tertiary)
@@ -206,30 +206,30 @@ local function apply_base_highlights(colors, background_style)
 
   -- Basic Syntax Highlighting (often falls back if TS is not active)
   set_hl("Comment", colors.comment or colors.outline, nil, "italic")
-  set_hl("Constant", colors.tertiary)
-  set_hl("String", colors.secondary)
+  set_hl("Constant", colors.tertiary) -- Tertiary for constants
+  set_hl("String", colors.secondary) -- Secondary for strings
   set_hl("Character", colors.secondary_fixed or colors.secondary)
   set_hl("Number", colors.tertiary)
   set_hl("Boolean", colors.tertiary)
   set_hl("Float", colors.tertiary)
-  set_hl("Identifier", colors.on_background) -- Changed to on_background for general text
+  set_hl("Identifier", colors.on_surface) -- Changed to on_surface for better visibility than on_background
   set_hl("Function", colors.primary)
   set_hl("Statement", colors.primary, nil, "bold")
   set_hl("Conditional", colors.primary)
   set_hl("Repeat", colors.primary)
   set_hl("Label", colors.primary_fixed_dim or colors.primary)
-  set_hl("Operator", colors.outline) -- Changed to outline
+  set_hl("Operator", colors.on_surface_variant) -- Changed to on_surface_variant for better contrast
   set_hl("Keyword", colors.primary)
   set_hl("Exception", colors.error)
-  set_hl("PreProc", colors.secondary) -- Changed to secondary
-  set_hl("Include", colors.secondary) -- Changed to secondary
-  set_hl("Define", colors.secondary) -- Changed to secondary
-  set_hl("Macro", colors.secondary) -- Changed to secondary
-  set_hl("PreCondit", colors.secondary) -- Changed to secondary
-  set_hl("Type", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("StorageClass", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("Structure", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
-  set_hl("Typedef", colors.secondary_fixed or colors.secondary) -- Changed to secondary_fixed/secondary
+  set_hl("PreProc", colors.secondary)
+  set_hl("Include", colors.secondary)
+  set_hl("Define", colors.secondary)
+  set_hl("Macro", colors.secondary)
+  set_hl("PreCondit", colors.secondary)
+  set_hl("Type", colors.secondary_fixed or colors.secondary)
+  set_hl("StorageClass", colors.secondary_fixed or colors.secondary)
+  set_hl("Structure", colors.secondary_fixed or colors.secondary)
+  set_hl("Typedef", colors.secondary_fixed or colors.secondary)
   set_hl("Special", colors.tertiary_container)
   set_hl("SpecialChar", colors.tertiary_container)
   set_hl("Tag", colors.tertiary_container)
@@ -249,20 +249,23 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownCode", "Constant")
   set_hl_link("markdownCodeBlock", "Constant")
   set_hl_link("markdownBold", "Statement")
-  set_hl_link("markdownItalic", "Comment")
-  set_hl("markdownItalic", nil, nil, "italic") -- Re-apply italic explicitly
+  set_hl("markdownItalic", colors.comment or colors.outline, nil, "italic") -- Re-apply italic explicitly with comment color
   set_hl_link("markdownLinkText", "Function")
   set_hl_link("markdownLinkUrl", "Underlined")
   set_hl_link("markdownHeading1", "Title")
   set_hl_link("markdownHeading2", "Title")
+  set_hl_link("markdownHeading3", "Title") -- Added more markdown headings
+  set_hl_link("markdownHeading4", "Title")
+  set_hl_link("markdownHeading5", "Title")
+  set_hl_link("markdownHeading6", "Title")
 
   -- Plugin highlights (only if not disabled)
   if not M.config.disable_plugin_highlights then
     -- NvimTree
     set_hl("NvimTreeRoot", colors.primary, nil, "bold")
     set_hl("NvimTreeFolderIcon", colors.secondary)
-    set_hl("NvimTreeGitDirty", colors.primary_container)
-    set_hl("NvimTreeGitNew", colors.tertiary_container)
+    set_hl("NvimTreeGitDirty", colors.tertiary) -- Changed to tertiary for dirty
+    set_hl("NvimTreeGitNew", colors.tertiary_container) -- Kept tertiary_container for new
     set_hl("NvimTreeIndentMarker", colors.outline_variant)
     set_hl("NvimTreeSymlink", colors.tertiary)
 
@@ -285,12 +288,12 @@ local function apply_base_highlights(colors, background_style)
     set_hl("CmpItemKindMethod", colors.primary)
     set_hl("CmpItemKindFunction", colors.primary)
     set_hl("CmpItemKindConstructor", colors.primary)
-    set_hl("CmpItemKindField", colors.primary_container)
+    set_hl("CmpItemKindField", colors.tertiary) -- Changed to tertiary
     set_hl("CmpItemKindVariable", colors.on_background)
     set_hl("CmpItemKindClass", colors.secondary_fixed or colors.secondary)
     set_hl("CmpItemKindInterface", colors.secondary_fixed or colors.secondary)
     set_hl("CmpItemKindModule", colors.secondary)
-    set_hl("CmpItemKindProperty", colors.primary_container)
+    set_hl("CmpItemKindProperty", colors.tertiary) -- Changed to tertiary
     set_hl("CmpItemKindUnit", colors.tertiary)
     set_hl("CmpItemKindValue", colors.tertiary)
     set_hl("CmpItemKindEnum", colors.secondary_fixed or colors.secondary)
@@ -369,9 +372,9 @@ local function apply_treesitter_highlights(colors)
   set_hl("@boolean", colors.tertiary)
   set_hl("@float", colors.tertiary)
 
-  set_hl("@variable", colors.on_background)
+  set_hl("@variable", colors.on_surface) -- Changed to on_surface for general variables
   set_hl("@variable.builtin", colors.tertiary_fixed_dim or colors.tertiary)
-  set_hl("@property", colors.primary_container)
+  set_hl("@property", colors.tertiary) -- Changed to tertiary for properties
   set_hl("@function", colors.primary)
   set_hl("@function.call", colors.primary)
   set_hl("@function.builtin", colors.primary_fixed_dim or colors.primary)
@@ -379,7 +382,7 @@ local function apply_treesitter_highlights(colors)
   set_hl("@method", colors.primary)
 
   set_hl("@keyword", colors.primary)
-  set_hl("@operator", colors.outline)
+  set_hl("@operator", colors.on_surface_variant) -- Consistent with base operator
   set_hl("@exception", colors.error)
   set_hl("@type", colors.secondary_fixed or colors.secondary)
   set_hl("@type.builtin", colors.secondary_fixed_dim or colors.secondary)
@@ -425,11 +428,11 @@ local function apply_treesitter_highlights(colors)
   set_hl("@diagnostic.hint", colors.tertiary)
   set_hl("@lsp.type.comment", colors.comment or colors.outline)
   set_hl("@lsp.type.keyword", colors.primary)
-  set_hl("@lsp.type.variable", colors.on_background)
+  set_hl("@lsp.type.variable", colors.on_surface) -- Consistent with @variable
   set_hl("@lsp.type.function", colors.primary)
   set_hl("@lsp.type.method", colors.primary)
   set_hl("@lsp.type.enumMember", colors.tertiary)
-  set_hl("@lsp.type.property", colors.primary_container)
+  set_hl("@lsp.type.property", colors.tertiary) -- Consistent with @property
   set_hl("@lsp.type.parameter", colors.tertiary_fixed_dim or colors.tertiary)
   set_hl("@lsp.type.namespace", colors.secondary)
   set_hl("@lsp.type.type", colors.secondary_fixed or colors.secondary)
