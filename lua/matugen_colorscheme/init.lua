@@ -114,75 +114,95 @@ local function apply_base_highlights(colors, background_style)
   local bg_pmenu = M.config.transparent_background and "NONE" or (colors.surface_container or colors.surface)
   local bg_statusline = M.config.transparent_background and "NONE" or (colors.surface_container_high or colors.surface)
   local bg_tabline = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
-  local bg_cursorline = M.config.transparent_background and "NONE" or (colors.surface_container_low or colors.surface)
+
+  -- IMPROVED: Make CursorLine much more visible by using a more contrasting background
+  local bg_cursorline = M.config.transparent_background and "NONE"
+    or (colors.surface_container or colors.surface_variant)
+
   local bg_cmdline = M.config.transparent_background and "NONE" or colors.background
   local bg_col_line = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
-  local bg_visual = M.config.transparent_background and "NONE" or colors.surface_variant
+
+  -- IMPROVED: Make Visual selection more prominent
+  local bg_visual = M.config.transparent_background and "NONE" or (colors.primary_container or colors.surface_variant)
 
   -- Define consistent foreground colors for UI elements
-  local ui_normal_fg = colors.outline or colors.on_surface_variant -- For subtle UI elements
-  local ui_active_fg = colors.on_surface -- For more prominent UI elements
+  local ui_normal_fg = colors.outline or colors.on_surface_variant
+  -- IMPROVED: Better contrast for line numbers
+  local ui_line_number_fg = colors.on_surface_variant or colors.outline
 
   --- Base Neovim UI Colors ---
   -- Normal text (consistent throughout the main buffer)
   set_hl("Normal", colors.on_background, bg_normal)
-  set_hl("NormalNC", colors.on_surface_variant, bg_normal) -- Non-current windows: slightly muted but still readable
+  set_hl("NormalNC", colors.on_surface_variant, bg_normal)
   set_hl("NormalFloat", colors.on_surface, bg_float)
 
-  -- Borders and Separators (consistent, subtle visibility)
-  set_hl("FloatBorder", colors.outline_variant, bg_float)
-  set_hl("VertSplit", colors.outline, bg_normal)
-  set_hl("WinSeparator", colors.outline, bg_normal)
+  -- Borders and Separators (more visible)
+  set_hl("FloatBorder", colors.outline, bg_float)
+  set_hl("VertSplit", colors.outline_variant or colors.outline, bg_normal)
+  set_hl("WinSeparator", colors.outline_variant or colors.outline, bg_normal)
 
-  -- Pop-up Menu (Pmenu)
+  -- Pop-up Menu (better contrast)
   set_hl("Pmenu", colors.on_surface, bg_pmenu)
-  set_hl("PmenuSel", colors.on_primary, colors.primary) -- Strong contrast for selection
-  set_hl("PmenuSbar", nil, bg_pmenu)
-  set_hl("PmenuThumb", nil, colors.primary_fixed) -- Clear scrollbar thumb
-  set_hl("FloatFooter", colors.on_surface, bg_float)
-  set_hl("FloatHeader", colors.on_surface, bg_float)
+  set_hl("PmenuSel", colors.on_primary, colors.primary, "bold")
+  set_hl("PmenuSbar", nil, colors.surface_container_low)
+  set_hl("PmenuThumb", nil, colors.primary)
+  set_hl("FloatFooter", colors.on_surface_variant, bg_float)
+  set_hl("FloatHeader", colors.on_surface, bg_float, "bold")
 
-  --- Line Numbers, Sign Column, Fold Column (subtle and consistent) ---
-  set_hl("LineNr", ui_normal_fg, bg_normal)
-  set_hl("LineNrAbove", ui_normal_fg, bg_normal)
-  set_hl("LineNrBelow", ui_normal_fg, bg_normal)
-  set_hl("SignColumn", ui_normal_fg, bg_normal)
-  set_hl("FoldColumn", ui_normal_fg, bg_normal)
+  --- Line Numbers, Sign Column, Fold Column (better visibility) ---
+  set_hl("LineNr", ui_line_number_fg, bg_normal)
+  set_hl("LineNrAbove", ui_line_number_fg, bg_normal)
+  set_hl("LineNrBelow", ui_line_number_fg, bg_normal)
+  set_hl("SignColumn", ui_line_number_fg, bg_normal)
+  set_hl("FoldColumn", ui_line_number_fg, bg_normal)
 
-  --- Cursorline and Number (clear emphasis) ---
+  --- IMPROVED: Cursorline and Number (much more visible) ---
   set_hl("CursorLine", nil, bg_cursorline)
-  set_hl("CursorLineNr", colors.primary_fixed, bg_cursorline, "bold") -- Strong emphasis on active line number
+  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold")
   set_hl("CursorColumn", nil, bg_cursorline)
 
-  --- Visual mode selection (distinct but not jarring) ---
-  set_hl("Visual", nil, bg_visual)
-  set_hl("VisualNOS", nil, bg_visual)
+  --- IMPROVED: Visual mode selection (more prominent) ---
+  set_hl("Visual", colors.on_primary_container, bg_visual)
+  set_hl("VisualNOS", colors.on_primary_container, bg_visual)
 
-  --- Search and IncSearch (high contrast for visibility) ---
-  set_hl("IncSearch", colors.on_secondary, colors.secondary_container, "bold")
-  set_hl("Search", colors.on_tertiary, colors.tertiary_container)
+  --- IMPROVED: Search and IncSearch (better contrast) ---
+  set_hl("IncSearch", colors.on_secondary, colors.secondary, "bold")
+  set_hl("Search", colors.on_tertiary_container, colors.tertiary_container)
+  set_hl("CurSearch", colors.on_secondary, colors.secondary, "bold") -- Current search match
 
-  --- Diagnostics (clear and impactful) ---
-  set_hl("ErrorMsg", colors.on_error, colors.error, "bold")
+  --- IMPROVED: Diagnostics (clearer and more intuitive) ---
+  set_hl("ErrorMsg", colors.on_error_container, colors.error_container, "bold")
   set_hl("WarningMsg", colors.on_primary_container, colors.primary_container, "bold")
   set_hl("InfoMsg", colors.on_secondary_container, colors.secondary_container)
   set_hl("HintMsg", colors.on_tertiary_container, colors.tertiary_container)
 
-  -- LSP Diagnostics (linking to general diagnostic messages for consistency)
-  set_hl_link("LspDiagnosticsError", "ErrorMsg")
-  set_hl_link("LspDiagnosticsWarning", "WarningMsg")
-  set_hl_link("LspDiagnosticsInformation", "InfoMsg")
-  set_hl_link("LspDiagnosticsHint", "HintMsg")
+  -- LSP Diagnostics (better mapping)
+  set_hl("DiagnosticError", colors.error, nil, "bold")
+  set_hl("DiagnosticWarn", colors.primary, nil, "bold")
+  set_hl("DiagnosticInfo", colors.secondary)
+  set_hl("DiagnosticHint", colors.tertiary)
 
-  --- Diffs (semantic and clear distinctions) ---
+  -- Diagnostic underlines
+  set_hl("DiagnosticUnderlineError", colors.error, nil, "underline")
+  set_hl("DiagnosticUnderlineWarn", colors.primary, nil, "underline")
+  set_hl("DiagnosticUnderlineInfo", colors.secondary, nil, "underline")
+  set_hl("DiagnosticUnderlineHint", colors.tertiary, nil, "underline")
+
+  -- Legacy LSP diagnostics links
+  set_hl_link("LspDiagnosticsError", "DiagnosticError")
+  set_hl_link("LspDiagnosticsWarning", "DiagnosticWarn")
+  set_hl_link("LspDiagnosticsInformation", "DiagnosticInfo")
+  set_hl_link("LspDiagnosticsHint", "DiagnosticHint")
+
+  --- IMPROVED: Diffs (more intuitive colors) ---
   set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container)
-  set_hl("DiffChange", colors.on_primary_container, colors.primary_container)
+  set_hl("DiffChange", colors.on_secondary_container, colors.secondary_container)
   set_hl("DiffDelete", colors.on_error_container, colors.error_container)
-  set_hl("DiffText", colors.on_secondary_container, colors.secondary_container)
+  set_hl("DiffText", colors.on_primary_container, colors.primary_container, "bold")
 
-  --- Statusline and Tabline (subtle hierarchy, clear active state) ---
-  set_hl("StatusLine", colors.on_surface, bg_statusline)
-  set_hl("StatusLineNC", colors.outline, bg_float) -- Inactive statusline uses float background
+  --- IMPROVED: Statusline and Tabline (clearer hierarchy) ---
+  set_hl("StatusLine", colors.on_surface, bg_statusline, "bold")
+  set_hl("StatusLineNC", colors.on_surface_variant, bg_float)
   set_hl("TabLine", colors.on_surface_variant, bg_tabline)
   set_hl("TabLineFill", colors.on_surface_variant, bg_tabline)
   set_hl("TabLineSel", colors.on_primary, colors.primary, "bold")
@@ -190,63 +210,63 @@ local function apply_base_highlights(colors, background_style)
   --- Command Line ---
   set_hl("CmdLine", colors.on_surface, bg_cmdline)
 
-  --- Spell checking (distinct underlines with clear foregrounds) ---
-  set_hl("SpellBad", colors.on_error, colors.error_container, "underline")
-  set_hl("SpellCap", colors.on_primary_container, colors.primary_container, "underline")
-  set_hl("SpellRare", colors.on_secondary_container, colors.secondary_container, "underline")
-  set_hl("SpellLocal", colors.on_tertiary_container, colors.tertiary_container, "underline")
+  --- IMPROVED: Spell checking (more visible) ---
+  set_hl("SpellBad", colors.error, nil, "underline")
+  set_hl("SpellCap", colors.primary, nil, "underline")
+  set_hl("SpellRare", colors.secondary, nil, "underline")
+  set_hl("SpellLocal", colors.tertiary, nil, "underline")
 
-  --- Other UI elements (consistent and less "colorful" where possible) ---
+  --- IMPROVED: Other UI elements ---
   set_hl("ColorColumn", nil, bg_col_line)
   set_hl("Cursor", colors.background, colors.on_background)
   set_hl("lCursor", colors.background, colors.on_background)
-  set_hl("MatchParen", colors.on_primary, colors.primary_container, "bold")
-  set_hl("NonText", ui_normal_fg) -- Consistent with line numbers
-  set_hl("Whitespace", ui_normal_fg) -- Consistent with line numbers
-  set_hl("Conceal", ui_normal_fg)
-  set_hl("Directory", colors.primary) -- Primary for directories
-  set_hl("Title", colors.primary)
-  set_hl("ModeMsg", colors.primary_container)
+  set_hl("MatchParen", colors.on_primary_container, colors.primary_container, "bold")
+  set_hl("NonText", ui_normal_fg)
+  set_hl("Whitespace", ui_normal_fg)
+  set_hl("Conceal", colors.on_surface_variant)
+  set_hl("Directory", colors.primary, nil, "bold")
+  set_hl("Title", colors.primary, nil, "bold")
+  set_hl("ModeMsg", colors.on_primary_container, colors.primary_container)
   set_hl("MoreMsg", colors.tertiary)
   set_hl("Question", colors.secondary)
   set_hl("Folded", colors.on_surface_variant, bg_statusline, "italic")
   set_hl("EndOfBuffer", ui_normal_fg)
-  set_hl("SpecialKey", ui_normal_fg)
+  set_hl("SpecialKey", colors.on_surface_variant)
 
-  --- Basic Syntax Highlighting (often falls back if TS is not active) ---
-  set_hl("Comment", colors.comment or colors.outline, nil, "italic")
-  set_hl("Constant", colors.tertiary_fixed) -- General constants, numbers, floats
-  set_hl("String", colors.secondary_fixed)
-  set_hl("Character", colors.secondary_fixed)
-  set_hl("Number", colors.tertiary_fixed)
-  set_hl("Boolean", colors.on_error_container or colors.error) -- More distinct for booleans (e.g., true/false)
-  set_hl("Float", colors.tertiary_fixed)
-  set_hl("Identifier", colors.on_surface) -- Consistent with Normal text
-  set_hl("Function", colors.primary_fixed)
-  set_hl("Statement", colors.primary, nil, "bold") -- General keywords, flow control
-  set_hl("Conditional", colors.primary_fixed_dim or colors.primary, nil, "bold") -- Specific for 'if', 'else', 'switch'
-  set_hl("Repeat", colors.primary_fixed_dim or colors.primary, nil, "bold") -- Specific for 'for', 'while'
-  set_hl("Label", colors.primary_fixed_dim or colors.primary)
+  --- IMPROVED: Basic Syntax Highlighting ---
+  set_hl("Comment", colors.on_surface_variant, nil, "italic")
+  set_hl("Constant", colors.tertiary)
+  set_hl("String", colors.secondary)
+  set_hl("Character", colors.secondary)
+  set_hl("Number", colors.tertiary)
+  set_hl("Boolean", colors.error, nil, "bold") -- More prominent for booleans
+  set_hl("Float", colors.tertiary)
+  set_hl("Identifier", colors.on_surface)
+  set_hl("Function", colors.primary, nil, "bold")
+  set_hl("Statement", colors.primary, nil, "bold")
+  set_hl("Conditional", colors.primary, nil, "bold")
+  set_hl("Repeat", colors.primary, nil, "bold")
+  set_hl("Label", colors.primary)
   set_hl("Operator", colors.on_surface_variant)
-  set_hl("Keyword", colors.primary)
-  set_hl("Exception", colors.error)
+  set_hl("Keyword", colors.primary, nil, "bold")
+  set_hl("Exception", colors.error, nil, "bold")
   set_hl("PreProc", colors.secondary)
   set_hl("Include", colors.secondary)
   set_hl("Define", colors.secondary)
   set_hl("Macro", colors.secondary)
   set_hl("PreCondit", colors.secondary)
-  set_hl("Type", colors.secondary_fixed_dim or colors.secondary) -- Types, storage classes, structs
-  set_hl("StorageClass", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("Structure", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("Typedef", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("Special", colors.tertiary_container)
-  set_hl("SpecialChar", colors.tertiary_container)
-  set_hl("Tag", colors.primary_fixed)
+  set_hl("Type", colors.secondary, nil, "bold")
+  set_hl("StorageClass", colors.secondary)
+  set_hl("Structure", colors.secondary)
+  set_hl("Typedef", colors.secondary)
+  set_hl("Special", colors.tertiary)
+  set_hl("SpecialChar", colors.tertiary)
+  set_hl("Tag", colors.primary)
   set_hl("Delimiter", colors.outline)
   set_hl("SpecialComment", colors.tertiary, nil, "italic")
   set_hl("Underlined", nil, nil, "underline")
   set_hl("Ignore", colors.background, colors.background)
-  set_hl("Todo", colors.on_tertiary, colors.tertiary_container, "bold")
+  set_hl("Todo", colors.on_tertiary_container, colors.tertiary_container, "bold")
 
   -- Link common groups for consistency
   set_hl_link("htmlTag", "Tag")
@@ -258,7 +278,7 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownCode", "Constant")
   set_hl_link("markdownCodeBlock", "Constant")
   set_hl_link("markdownBold", "Statement")
-  set_hl("markdownItalic", colors.comment or colors.outline, nil, "italic")
+  set_hl("markdownItalic", colors.on_surface_variant, nil, "italic")
   set_hl_link("markdownLinkText", "Function")
   set_hl_link("markdownLinkUrl", "Underlined")
   set_hl_link("markdownHeading1", "Title")
@@ -267,232 +287,196 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownHeading4", "Title")
   set_hl_link("markdownHeading5", "Title")
   set_hl_link("markdownHeading6", "Title")
-
-  --- Plugin highlights (only if not disabled) ---
-  if not M.config.disable_plugin_highlights then
-    -- NvimTree
-    set_hl("NvimTreeRoot", colors.primary, nil, "bold")
-    set_hl("NvimTreeFolderIcon", colors.secondary)
-    set_hl("NvimTreeGitDirty", colors.tertiary)
-    set_hl("NvimTreeGitNew", colors.tertiary_fixed)
-    set_hl("NvimTreeIndentMarker", colors.outline_variant)
-    set_hl("NvimTreeSymlink", colors.tertiary)
-
-    -- Telescope
-    set_hl("TelescopeNormal", colors.on_surface, bg_float)
-    set_hl("TelescopeBorder", colors.outline, bg_float)
-    set_hl("TelescopePromptNormal", colors.on_surface, bg_statusline)
-    set_hl("TelescopePromptBorder", colors.primary, bg_statusline)
-    set_hl("TelescopePromptPrefix", colors.primary, bg_statusline, "bold")
-    set_hl("TelescopeMatching", colors.primary, nil, "bold")
-    set_hl("TelescopeSelection", colors.on_primary_container, colors.primary_container)
-    set_hl_link("TelescopeResultsNormal", "NormalFloat")
-    set_hl_link("TelescopeResultsSelection", "TelescopeSelection")
-
-    -- Cmp (Completion) - aiming for consistency in kind colors
-    set_hl("CmpBorder", colors.outline_variant, bg_float)
-    set_hl("CmpMenu", colors.on_surface, bg_float)
-    set_hl("CmpItemKind", ui_normal_fg) -- Default kind color
-    set_hl("CmpItemKindText", colors.on_surface)
-    set_hl("CmpItemKindMethod", colors.primary_fixed)
-    set_hl("CmpItemKindFunction", colors.primary_fixed)
-    set_hl("CmpItemKindConstructor", colors.primary_fixed)
-    set_hl("CmpItemKindField", colors.tertiary_fixed)
-    set_hl("CmpItemKindVariable", colors.on_surface)
-    set_hl("CmpItemKindClass", colors.secondary_fixed)
-    set_hl("CmpItemKindInterface", colors.secondary_fixed)
-    set_hl("CmpItemKindModule", colors.secondary)
-    set_hl("CmpItemKindProperty", colors.tertiary_fixed)
-    set_hl("CmpItemKindUnit", colors.tertiary_fixed_dim)
-    set_hl("CmpItemKindValue", colors.tertiary_fixed_dim)
-    set_hl("CmpItemKindEnum", colors.secondary_fixed)
-    set_hl("CmpItemKindKeyword", colors.primary)
-    set_hl("CmpItemKindSnippet", colors.tertiary_container)
-    set_hl("CmpItemKindColor", colors.tertiary)
-    set_hl("CmpItemKindFile", colors.primary_container)
-    set_hl("CmpItemKindReference", colors.primary)
-    set_hl("CmpItemKindFolder", colors.secondary)
-    set_hl("CmpItemKindEnumMember", colors.tertiary_fixed_dim)
-    set_hl("CmpItemKindConstant", colors.tertiary_fixed_dim)
-    set_hl("CmpItemKindStruct", colors.secondary_fixed)
-    set_hl("CmpItemKindEvent", colors.tertiary_fixed_dim)
-    set_hl("CmpItemKindOperator", colors.outline)
-    set_hl("CmpItemKindTypeParameter", colors.secondary_fixed)
-    set_hl("CmpItemAbbr", colors.on_surface)
-    set_hl("CmpItemAbbrDeprecated", colors.outline_variant, nil, "strikethrough")
-    set_hl("CmpItemAbbrMatch", colors.primary, nil, "bold")
-    set_hl("CmpItemAbbrMatchFuzzy", colors.primary, nil, "underline")
-    set_hl("CmpItemMenu", colors.outline_variant)
-    set_hl("CmpItemSel", colors.on_primary, colors.primary)
-    set_hl("CmpDocBorder", colors.outline_variant, bg_pmenu)
-    set_hl("CmpDoc", colors.on_surface, bg_pmenu)
-
-    -- Gitsigns
-    set_hl("GitSignsAdd", colors.tertiary, nil, "bold")
-    set_hl("GitSignsChange", colors.primary, nil, "bold")
-    set_hl("GitSignsDelete", colors.error, nil, "bold")
-    set_hl("GitSignsChangeDelete", colors.error, nil, "bold")
-
-    -- Bufferline / Barbar
-    set_hl("BufferLineFill", bg_tabline)
-    set_hl(
-      "BufferLineBuffer",
-      colors.on_surface_variant,
-      bg_float -- Use float background for inactive buffers for consistency
-    )
-    set_hl("BufferLineBufferSelected", colors.on_primary, colors.primary, "bold")
-    set_hl("BufferLineTabSeparator", colors.background, bg_tabline)
-    set_hl("BufferLineBufferVisible", colors.on_surface, bg_pmenu)
-
-    -- LspSaga
-    set_hl("LspSagaBorderTitle", colors.primary)
-    set_hl("LspSagaBorder", colors.outline)
-    set_hl("LspSagaError", colors.error)
-    set_hl("LspSagaWarning", colors.primary)
-    set_hl("LspSagaInfo", colors.secondary)
-    set_hl("LspSagaHint", colors.tertiary)
-    set_hl("LspSagaDef", colors.primary)
-    set_hl("LspSagaTypeDefinition", colors.secondary)
-    set_hl("LspSagaDiagSource", colors.outline_variant)
-    set_hl("LspSagaCodeActionTitle", colors.primary)
-    set_hl("LspSagaCodeActionSelected", colors.on_primary, colors.primary)
-
-    -- Lualine (explicitly define mode highlight groups for contrast)
-    -- These are crucial for a clear mode indication.
-    set_hl("LualineNormal", colors.on_primary, colors.primary, "bold") -- Very prominent for Normal mode
-    set_hl("LualineInsert", colors.on_tertiary, colors.tertiary, "bold") -- Greenish for Insert
-    set_hl("LualineVisual", colors.on_secondary, colors.secondary, "bold") -- Yellowish/Orange for Visual
-    set_hl("LualineReplace", colors.on_error, colors.error, "bold") -- Red for Replace (like error)
-    set_hl("LualineCommand", colors.on_primary_container, colors.primary_container, "bold") -- Slightly muted primary for Cmd
-    set_hl("LualineTerminal", colors.on_secondary_container, colors.secondary_container, "bold") -- Cyanish for Terminal
-    set_hl("LualineStatusLine", colors.on_surface, bg_statusline) -- Default Lualine section bg/fg
-    set_hl("LualineStatusLineNC", colors.outline, bg_float) -- Inactive Lualine statusline
-    set_hl("LualineSpecial", colors.primary_fixed_dim) -- For special symbols/separators in Lualine
-  end
-
-  -- General links to standard groups
-  set_hl_link("CursorIM", "Normal")
 end
 
---- Applies Treesitter-specific highlight groups.
+--- Applies Treesitter-specific highlight groups with enhanced contrast.
 --- @param colors table The table of color values (hex strings).
 local function apply_treesitter_highlights(colors)
   if M.config.disable_treesitter_highlights then
     return
   end
 
-  -- Reuse the consistent foreground colors for UI elements defined in apply_base_highlights
-  local ui_normal_fg = colors.outline or colors.on_surface_variant
+  -- ENHANCED: More contrasting Treesitter highlight groups inspired by Rose Pine
+  -- Key principle: Use more distinct colors for different semantic elements
 
-  -- Treesitter highlight groups (harmonious and distinct, less reliance on arbitrary colors)
-  set_hl("@comment", colors.comment or colors.outline, nil, "italic")
+  -- Comments - muted but readable
+  set_hl("@comment", colors.on_surface_variant, nil, "italic")
+  set_hl("@comment.documentation", colors.outline, nil, "italic")
 
-  -- Constants, numbers, floats (more generally "literal" values)
-  set_hl("@constant", colors.tertiary_fixed)
-  set_hl("@constant.builtin", colors.tertiary_fixed_dim or colors.tertiary)
-  set_hl("@constant.macro", colors.tertiary_container)
-  set_hl("@string", colors.secondary_fixed)
-  set_hl("@string.escape", colors.tertiary)
-  set_hl("@character", colors.secondary_fixed)
-  set_hl("@number", colors.tertiary_fixed)
-  set_hl("@float", colors.tertiary_fixed)
+  -- Constants group - use tertiary for regular constants, primary for special ones
+  set_hl("@constant", colors.tertiary, nil, "bold")
+  set_hl("@constant.builtin", colors.primary, nil, "bold") -- More prominent for built-ins
+  set_hl("@constant.macro", colors.secondary, nil, "bold") -- Distinct color for macros
 
-  -- Booleans - give them a distinct, possibly slightly "alarming" but readable color, like error_container
-  -- This provides strong contrast and signals a "state" value.
-  set_hl("@boolean", colors.on_error_container or colors.error)
+  -- Strings - keep secondary but enhance special strings
+  set_hl("@string", colors.secondary)
+  set_hl("@string.escape", colors.primary, nil, "bold") -- Make escapes pop
+  set_hl("@string.special", colors.tertiary, nil, "bold") -- Special strings more visible
+  set_hl("@string.regexp", colors.error, nil, "bold") -- Regex strings stand out
 
-  -- Variables, properties
-  set_hl("@variable", colors.on_surface) -- Consistent with base Identifier
-  set_hl("@variable.builtin", colors.tertiary_fixed_dim or colors.tertiary)
-  set_hl("@property", colors.tertiary_fixed)
+  -- Character literals
+  set_hl("@character", colors.secondary)
+  set_hl("@character.special", colors.primary, nil, "bold")
 
-  -- Functions, methods
-  set_hl("@function", colors.primary_fixed)
-  set_hl("@function.call", colors.primary_fixed)
-  set_hl("@function.builtin", colors.primary_fixed_dim or colors.primary)
-  set_hl("@function.macro", colors.primary_container)
-  set_hl("@method", colors.primary_fixed)
+  -- Numbers - tertiary but with better distinction
+  set_hl("@number", colors.tertiary, nil, "bold")
+  set_hl("@number.float", colors.tertiary, nil, "bold,italic")
 
-  -- Keywords, operators, exceptions
-  set_hl("@keyword", colors.primary)
-  set_hl("@operator", colors.on_surface_variant) -- Consistent with base Operator
-  set_hl("@exception", colors.error)
+  -- Booleans - highly contrasting (Rose Pine principle)
+  set_hl("@boolean", colors.error, nil, "bold")
 
-  -- Conditionals and Repeats/Flow Control - use a distinct, slightly bolder variant of primary
-  -- This makes "if", "else", "for", "while", "return" stand out more.
-  set_hl("@conditional", colors.primary, nil, "bold") -- Using primary with bold
-  set_hl("@repeat", colors.primary, nil, "bold") -- Consistent with conditional
-  set_hl("@label", colors.primary_fixed_dim or colors.primary)
-  set_hl("@include", colors.secondary) -- Link includes to secondary
-  set_hl("@return", colors.primary, nil, "bold") -- Explicitly highlight returns
+  -- Variables - create hierarchy with different weights
+  set_hl("@variable", colors.on_surface)
+  set_hl("@variable.builtin", colors.primary, nil, "bold,italic") -- Built-in variables stand out
+  set_hl("@variable.parameter", colors.on_surface, nil, "italic") -- Parameters slightly different
+  set_hl("@variable.member", colors.tertiary) -- Object members more visible
+  set_hl("@property", colors.tertiary) -- Properties same as members
 
-  -- Types
-  set_hl("@type", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@type.builtin", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@type.qualifier", colors.outline)
-  set_hl("@type.definition", colors.tertiary_fixed or colors.tertiary)
+  -- Functions - enhanced hierarchy and contrast
+  set_hl("@function", colors.primary, nil, "bold")
+  set_hl("@function.call", colors.primary) -- Function calls less bold
+  set_hl("@function.builtin", colors.secondary, nil, "bold") -- Built-in functions distinct
+  set_hl("@function.macro", colors.error, nil, "bold") -- Macros highly visible
+  set_hl("@method", colors.primary, nil, "bold")
+  set_hl("@method.call", colors.primary)
+  set_hl("@constructor", colors.secondary, nil, "bold") -- Constructors distinct
 
-  -- Punctuation
-  set_hl("@punctuation.delimiter", colors.outline)
-  set_hl("@punctuation.bracket", colors.outline_variant)
-  set_hl("@punctuation.special", colors.tertiary_fixed or colors.tertiary)
+  -- Keywords - enhanced contrast and semantic grouping
+  set_hl("@keyword", colors.primary, nil, "bold")
+  set_hl("@keyword.function", colors.secondary, nil, "bold") -- Function keywords distinct
+  set_hl("@keyword.operator", colors.tertiary, nil, "bold") -- Operator keywords
+  set_hl("@keyword.return", colors.error, nil, "bold") -- Return statements prominent
+  set_hl("@keyword.conditional", colors.primary, nil, "bold")
+  set_hl("@keyword.repeat", colors.primary, nil, "bold")
+  set_hl("@keyword.import", colors.secondary, nil, "bold") -- Import/include statements
+  set_hl("@keyword.export", colors.secondary, nil, "bold")
+  set_hl("@keyword.storage", colors.secondary, nil, "bold") -- Storage class keywords
+  set_hl("@keyword.modifier", colors.tertiary, nil, "bold") -- Modifiers like static, const
 
-  -- Tags
-  set_hl("@tag", colors.primary_fixed)
-  set_hl("@tag.attribute", colors.secondary_fixed or colors.secondary)
-  set_hl("@tag.builtin", colors.primary_fixed_dim or colors.primary)
+  -- Operators - more visible
+  set_hl("@operator", colors.tertiary, nil, "bold")
+
+  -- Control flow - highly visible
+  set_hl("@conditional", colors.primary, nil, "bold")
+  set_hl("@repeat", colors.primary, nil, "bold")
+  set_hl("@label", colors.secondary, nil, "bold")
+  set_hl("@exception", colors.error, nil, "bold")
+
+  -- Includes and modules
+  set_hl("@include", colors.secondary, nil, "bold")
+  set_hl("@namespace", colors.tertiary, nil, "bold")
+  set_hl("@module", colors.tertiary, nil, "bold")
+
+  -- Types - enhanced hierarchy
+  set_hl("@type", colors.secondary, nil, "bold")
+  set_hl("@type.builtin", colors.primary, nil, "bold") -- Built-in types more prominent
+  set_hl("@type.qualifier", colors.tertiary, nil, "bold") -- Type qualifiers distinct
+  set_hl("@type.definition", colors.secondary, nil, "bold,underline") -- Type definitions
+  set_hl("@storageclass", colors.tertiary, nil, "bold")
+
+  -- Attributes and annotations
+  set_hl("@attribute", colors.error, nil, "bold") -- Attributes/decorators stand out
+  set_hl("@annotation", colors.error, nil, "bold")
+
+  -- Punctuation - enhanced visibility
+  set_hl("@punctuation.delimiter", colors.outline, nil, "bold")
+  set_hl("@punctuation.bracket", colors.outline, nil, "bold")
+  set_hl("@punctuation.special", colors.primary, nil, "bold")
+
+  -- Tags (HTML/XML) - better contrast
+  set_hl("@tag", colors.primary, nil, "bold")
+  set_hl("@tag.attribute", colors.tertiary, nil, "bold")
+  set_hl("@tag.delimiter", colors.outline, nil, "bold")
 
   -- Text content and formatting
   set_hl("@text", colors.on_background)
-  set_hl("@text.literal", colors.secondary_container)
-  set_hl("@text.reference", colors.primary)
+  set_hl("@text.literal", colors.secondary, nil, "bold") -- Code blocks more visible
+  set_hl("@text.reference", colors.primary, nil, "bold")
   set_hl("@text.title", colors.primary, nil, "bold")
-  set_hl("@text.uri", colors.tertiary, nil, "underline")
+  set_hl("@text.uri", colors.tertiary, nil, "underline,bold")
   set_hl("@text.underline", nil, nil, "underline")
-  set_hl("@text.todo", colors.on_tertiary, colors.tertiary_container, "bold")
-  set_hl("@text.warning", colors.on_primary_container, colors.primary_container)
-  set_hl("@text.danger", colors.on_error, colors.error_container)
-  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container)
-  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container)
+  set_hl("@text.todo", colors.on_tertiary_container, colors.tertiary_container, "bold")
+  set_hl("@text.warning", colors.on_primary_container, colors.primary_container, "bold")
+  set_hl("@text.danger", colors.on_error_container, colors.error_container, "bold")
+  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container, "bold")
+  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container, "bold")
 
-  -- Markdown specific
+  -- Markdown specific - enhanced hierarchy
   set_hl("@markup.heading", colors.primary, nil, "bold")
-  set_hl("@markup.raw", colors.secondary_container)
-  set_hl("@markup.list", colors.tertiary)
-  set_hl("@markup.link", colors.tertiary, nil, "underline")
-  set_hl("@markup.link.url", colors.outline, nil, "underline")
-  set_hl("@markup.italic", nil, nil, "italic")
-  set_hl("@markup.bold", nil, nil, "bold")
-  set_hl("@markup.strikethrough", nil, nil, "strikethrough")
+  set_hl("@markup.heading.1", colors.primary, nil, "bold,underline")
+  set_hl("@markup.heading.2", colors.secondary, nil, "bold")
+  set_hl("@markup.heading.3", colors.tertiary, nil, "bold")
+  set_hl("@markup.heading.4", colors.primary, nil, "bold")
+  set_hl("@markup.heading.5", colors.secondary, nil, "bold")
+  set_hl("@markup.heading.6", colors.tertiary, nil, "bold")
+  set_hl("@markup.raw", colors.secondary, colors.surface_container, "bold")
+  set_hl("@markup.raw.block", colors.secondary, colors.surface_container, "bold")
+  set_hl("@markup.list", colors.tertiary, nil, "bold")
+  set_hl("@markup.list.checked", colors.tertiary, nil, "bold")
+  set_hl("@markup.list.unchecked", colors.outline, nil, "bold")
+  set_hl("@markup.link", colors.primary, nil, "underline,bold")
+  set_hl("@markup.link.label", colors.primary, nil, "bold")
+  set_hl("@markup.link.url", colors.tertiary, nil, "underline,bold")
+  set_hl("@markup.italic", colors.on_surface, nil, "italic")
+  set_hl("@markup.bold", colors.on_surface, nil, "bold")
+  set_hl("@markup.strikethrough", colors.on_surface_variant, nil, "strikethrough")
+  set_hl("@markup.quote", colors.on_surface_variant, colors.surface_container, "italic")
 
-  -- Diff
-  set_hl("@diff.minus", colors.error_container)
-  set_hl("@diff.plus", colors.tertiary_container)
-  set_hl("@diff.delta", colors.primary_container)
+  -- Diff - more contrasting
+  set_hl("@diff.minus", colors.on_error_container, colors.error_container, "bold")
+  set_hl("@diff.plus", colors.on_tertiary_container, colors.tertiary_container, "bold")
+  set_hl("@diff.delta", colors.on_primary_container, colors.primary_container, "bold")
 
-  -- Diagnostic (TS)
-  set_hl("@diagnostic.error", colors.error)
-  set_hl("@diagnostic.warning", colors.primary)
-  set_hl("@diagnostic.info", colors.secondary)
-  set_hl("@diagnostic.hint", colors.tertiary)
+  -- Diagnostic (TS) - enhanced visibility
+  set_hl("@diagnostic.error", colors.error, nil, "bold")
+  set_hl("@diagnostic.warning", colors.primary, nil, "bold")
+  set_hl("@diagnostic.info", colors.secondary, nil, "bold")
+  set_hl("@diagnostic.hint", colors.tertiary, nil, "bold")
 
-  -- LSP Types (TS) - consistent with base syntax groups
-  set_hl("@lsp.type.comment", colors.comment or colors.outline)
-  set_hl("@lsp.type.keyword", colors.primary)
+  -- LSP semantic tokens - enhanced contrast
+  set_hl("@lsp.type.comment", colors.on_surface_variant, nil, "italic")
+  set_hl("@lsp.type.keyword", colors.primary, nil, "bold")
   set_hl("@lsp.type.variable", colors.on_surface)
-  set_hl("@lsp.type.function", colors.primary_fixed)
-  set_hl("@lsp.type.method", colors.primary_fixed)
-  set_hl("@lsp.type.enumMember", colors.tertiary_fixed_dim)
-  set_hl("@lsp.type.property", colors.tertiary_fixed)
-  set_hl("@lsp.type.parameter", colors.tertiary_fixed_dim or colors.tertiary)
-  set_hl("@lsp.type.namespace", colors.secondary)
-  set_hl("@lsp.type.type", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@lsp.type.interface", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@lsp.type.struct", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@lsp.type.enum", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@lsp.type.class", colors.secondary_fixed_dim or colors.secondary)
-  set_hl("@lsp.type.event", colors.tertiary_fixed_dim or colors.tertiary)
-  set_hl("@lsp.type.macro", colors.tertiary_container)
+  set_hl("@lsp.type.parameter", colors.on_surface, nil, "italic")
+  set_hl("@lsp.type.property", colors.tertiary, nil, "bold")
+  set_hl("@lsp.type.function", colors.primary, nil, "bold")
+  set_hl("@lsp.type.method", colors.primary, nil, "bold")
+  set_hl("@lsp.type.enumMember", colors.tertiary, nil, "bold")
+  set_hl("@lsp.type.namespace", colors.secondary, nil, "bold")
+  set_hl("@lsp.type.type", colors.secondary, nil, "bold")
+  set_hl("@lsp.type.interface", colors.secondary, nil, "bold,italic")
+  set_hl("@lsp.type.struct", colors.secondary, nil, "bold")
+  set_hl("@lsp.type.enum", colors.secondary, nil, "bold")
+  set_hl("@lsp.type.class", colors.secondary, nil, "bold,underline")
+  set_hl("@lsp.type.event", colors.tertiary, nil, "bold")
+  set_hl("@lsp.type.macro", colors.error, nil, "bold")
+  set_hl("@lsp.type.decorator", colors.error, nil, "bold")
+  set_hl("@lsp.type.modifier", colors.tertiary, nil, "bold")
+
+  -- Language-specific enhancements
+  -- JavaScript/TypeScript
+  set_hl("@lsp.type.typeParameter", colors.primary, nil, "bold,italic")
+  set_hl("@constructor.typescript", colors.secondary, nil, "bold")
+  set_hl("@constructor.javascript", colors.secondary, nil, "bold")
+
+  -- Rust
+  set_hl("@lsp.type.lifetime", colors.error, nil, "bold,italic")
+  set_hl("@lsp.type.selfKeyword", colors.primary, nil, "bold,italic")
+
+  -- Python
+  set_hl("@lsp.type.decorator.python", colors.error, nil, "bold")
+  set_hl("@lsp.type.selfParameter", colors.primary, nil, "bold,italic")
+
+  -- C/C++
+  set_hl("@lsp.type.concept", colors.secondary, nil, "bold,italic")
+  set_hl("@preproc", colors.secondary, nil, "bold")
+
+  -- Additional semantic enhancements
+  set_hl("@field", colors.tertiary) -- Struct/class fields
+  set_hl("@constant.macro", colors.secondary, nil, "bold") -- Macro constants
+  set_hl("@define", colors.secondary, nil, "bold") -- Preprocessor defines
+  set_hl("@symbol", colors.primary, nil, "bold") -- Symbols
+  set_hl("@embedded", colors.on_surface, colors.surface_container) -- Embedded code
 end
 
 --- Applies custom user highlight overrides.
@@ -506,7 +490,7 @@ local function apply_custom_highlights(colors)
   for group, opts in pairs(M.config.custom_highlights) do
     -- If the group is ignored, skip it entirely
     if M.config.ignore_groups and M.config.ignore_groups[group] then
-      goto continue -- Lua's goto for skipping loop iteration
+      goto continue
     end
 
     local fg, bg, style = nil, nil, nil
@@ -522,17 +506,54 @@ local function apply_custom_highlights(colors)
       -- Allow color references like "colors.primary"
       if fg and type(fg) == "string" and fg:match("^colors%.") then
         local color_key = fg:match("^colors%.(.+)$")
-        fg = colors[color_key] or fg -- Fallback to original string if key not found
+        fg = colors[color_key] or fg
       end
       if bg and type(bg) == "string" and bg:match("^colors%.") then
         local color_key = bg:match("^colors%.(.+)$")
-        bg = colors[color_key] or bg -- Fallback to original string if key not found
+        bg = colors[color_key] or bg
       end
     end
 
     -- Use the centralized set_hl function to apply the custom highlight
     set_hl(group, fg, bg, style)
-    ::continue:: -- Label for goto
+    ::continue::
+  end
+end
+
+--- Applies plugin-specific highlight groups based on the enabled plugins in config.
+--- These highlights are loaded from separate Lua modules.
+--- @param colors table The table of color values (hex strings).
+--- @param background_style string "dark" or "light"
+local function apply_plugin_highlights(colors, background_style)
+  if not M.config.plugins then
+    return
+  end
+
+  for plugin_name, enabled in pairs(M.config.plugins) do
+    if enabled then
+      -- Construct the module path for the plugin highlights
+      local plugin_module_path = "matugen_colorscheme.plugins." .. plugin_name
+
+      local ok, plugin_module = pcall(require, plugin_module_path)
+      if ok and type(plugin_module) == "table" and type(plugin_module.setup) == "function" then
+        -- Pass colors, set_hl, set_hl_link, and the main config to the plugin module
+        plugin_module.setup(colors, set_hl, set_hl_link, M.config)
+      elseif not ok then
+        vim.notify(
+          "Failed to load plugin highlight module '" .. plugin_module_path .. "': " .. plugin_module,
+          vim.log.levels.ERROR,
+          { title = "Matugen.nvim" }
+        )
+      else
+        vim.notify(
+          "Plugin highlight module '"
+            .. plugin_module_path
+            .. "' is not correctly structured (missing setup function or not a table).",
+          vim.log.levels.WARN,
+          { title = "Matugen.nvim" }
+        )
+      end
+    end
   end
 end
 
@@ -543,30 +564,31 @@ local function set_terminal_colors(colors)
     return
   end
 
-  -- Map Matugen colors to standard 16 terminal colors
-  -- Prioritize specific, harmonious Matugen colors for terminal consistency
+  -- IMPROVED: Better terminal color mapping
   local term_colors = {
-    colors.surface_container_high, -- 0: Black (dark grey)
+    colors.surface_container_high or colors.surface, -- 0: Black
     colors.error, -- 1: Red
     colors.tertiary, -- 2: Green
     colors.secondary, -- 3: Yellow
     colors.primary, -- 4: Blue
-    colors.error_container, -- 5: Magenta (can be more purple if error_container leans that way)
+    colors.error_container, -- 5: Magenta
     colors.secondary_container, -- 6: Cyan
-    colors.on_surface, -- 7: White (light grey)
+    colors.on_surface, -- 7: White
 
-    colors.outline, -- 8: Bright Black (brighter dark grey)
-    colors.on_error, -- 9: Bright Red
-    colors.on_tertiary, -- 10: Bright Green
-    colors.on_secondary, -- 11: Bright Yellow
-    colors.on_primary, -- 12: Bright Blue
-    colors.on_error_container, -- 13: Bright Magenta
-    colors.on_secondary_container, -- 14: Bright Cyan
-    colors.on_background, -- 15: Bright White (white)
+    colors.outline, -- 8: Bright Black
+    colors.on_error_container, -- 9: Bright Red
+    colors.on_tertiary_container, -- 10: Bright Green
+    colors.on_secondary_container, -- 11: Bright Yellow
+    colors.on_primary_container, -- 12: Bright Blue
+    colors.on_error, -- 13: Bright Magenta
+    colors.on_secondary, -- 14: Bright Cyan
+    colors.on_background, -- 15: Bright White
   }
 
   for i = 0, 15 do
-    vim.g["terminal_color_" .. i] = term_colors[i + 1]
+    if term_colors[i + 1] then
+      vim.g["terminal_color_" .. i] = term_colors[i + 1]
+    end
   end
 end
 
@@ -605,6 +627,9 @@ function M.load_matugen_colorscheme()
     apply_treesitter_highlights(loaded_colors)
   end
 
+  -- Apply plugin-specific highlights
+  apply_plugin_highlights(loaded_colors, current_background_style)
+
   -- Apply custom highlights last, allowing them to override previous settings
   apply_custom_highlights(loaded_colors)
 
@@ -625,7 +650,7 @@ function M.setup(opts)
     background_style = "dark", -- "dark" or "light"
     auto_load = true, -- Auto-load on VimEnter
     disable_clear = false, -- Don't clear existing highlights before applying
-    disable_plugin_highlights = false, -- Don't apply plugin-specific highlights
+    -- disable_plugin_highlights is now replaced by the 'plugins' table
     disable_treesitter_highlights = false, -- Don't apply Treesitter highlights
     disable_notifications = false, -- Don't show success notifications
     disable_generation_hint = false, -- Don't show generation hint when file not found
@@ -633,6 +658,16 @@ function M.setup(opts)
     custom_highlights = {}, -- Custom highlight overrides: { "Normal" = { fg = "#RRGGBB", bg = "colors.surface", style = "bold" } }
     transparent_background = false, -- Set background to NONE for UI elements (e.g., Normal, Float, StatusLine)
     set_term_colors = true, -- Set terminal colors (terminal_color_0 to terminal_color_15) based on Matugen palette
+    plugins = {
+      -- Enable or disable plugin-specific highlights here
+      -- Example:
+      -- cmp = true,
+      -- nvimtree = true,
+      -- telescope = true,
+      -- gitsigns = true,
+      -- bufferline = true, -- For Bufferline / Barbar
+      -- lspsaga = true,
+    },
   }
 
   -- Handle both opts table and config function patterns
@@ -684,15 +719,16 @@ function M.setup(opts)
     })
   end
 
-  -- Autocmd for Treesitter-specific highlights and custom highlights
+  -- Autocmd for Treesitter-specific highlights, plugin highlights, and custom highlights
   -- These need to be re-applied after a ColorScheme event, as other plugins
   -- or Neovim itself might overwrite them.
   vim.api.nvim_create_autocmd("ColorScheme", {
-    group = vim.api.nvim_create_augroup("MatugenTreesitterHighlights", { clear = true }),
+    group = vim.api.nvim_create_augroup("MatugenPostHighlights", { clear = true }),
     callback = function()
       -- Only apply if our colorscheme is active and we have loaded colors
       if vim.g.colors_name == "matugen_colors" and next(loaded_colors) ~= nil then
         apply_treesitter_highlights(loaded_colors)
+        apply_plugin_highlights(loaded_colors, current_background_style) -- Re-apply plugin highlights
         apply_custom_highlights(loaded_colors)
         set_terminal_colors(loaded_colors) -- Re-apply terminal colors if needed
       end
@@ -708,21 +744,6 @@ end
 -- Function to get the current config
 function M.get_config()
   return M.config
-end
-
--- Function to update configuration at runtime
----@param new_opts table New options to merge into the current config.
-function M.update_config(new_opts)
-  M.config = vim.tbl_deep_extend("force", M.config, new_opts or {})
-  -- Re-validate background_style after update
-  if M.config.background_style ~= "dark" and M.config.background_style ~= "light" then
-    vim.notify(
-      "Invalid background_style after update: '" .. M.config.background_style .. "'. Using 'dark' instead.",
-      vim.log.levels.WARN,
-      { title = "Matugen.nvim" }
-    )
-    M.config.background_style = "dark"
-  end
 end
 
 return M
