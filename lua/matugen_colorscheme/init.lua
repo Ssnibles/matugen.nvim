@@ -1,3 +1,5 @@
+-- Ssnibles/matugen.nvim/lua/matugen_colorscheme/init.lua
+
 local M = {}
 
 -- Global variable to store loaded colors
@@ -113,27 +115,21 @@ local function apply_base_highlights(colors, background_style)
   local bg_statusline = M.config.transparent_background and "NONE" or (colors.surface_container_high or colors.surface)
   local bg_tabline = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
 
-  -- IMPROVED: Make CursorLine much more visible by using a more contrasting background
-  -- Use surface_container_high for better distinction from normal background
   local bg_cursorline = M.config.transparent_background and "NONE"
-    or (colors.surface_container_high or colors.surface_variant)
+    or (colors.surface_container or colors.surface_variant)
 
   local bg_cmdline = M.config.transparent_background and "NONE" or colors.background
   local bg_col_line = M.config.transparent_background and "NONE" or (colors.surface_container_lowest or colors.surface)
-
-  -- IMPROVED: Make Visual selection more prominent
-  -- Use primary_container for a strong, clear selection
   local bg_visual = M.config.transparent_background and "NONE" or (colors.primary_container or colors.surface_variant)
 
   -- Define consistent foreground colors for UI elements
   local ui_normal_fg = colors.outline or colors.on_surface_variant
-  -- IMPROVED: Better contrast for line numbers - use on_surface_variant for subtlety, primary for emphasis on CursorLineNr
   local ui_line_number_fg = colors.on_surface_variant or colors.outline
 
   --- Base Neovim UI Colors ---
   -- Normal text (consistent throughout the main buffer)
   set_hl("Normal", colors.on_background, bg_normal)
-  set_hl("NormalNC", colors.on_surface_variant, bg_normal) -- Non-current window normal
+  set_hl("NormalNC", colors.on_surface_variant, bg_normal)
   set_hl("NormalFloat", colors.on_surface, bg_float)
 
   -- Borders and Separators (more visible)
@@ -143,51 +139,50 @@ local function apply_base_highlights(colors, background_style)
 
   -- Pop-up Menu (better contrast)
   set_hl("Pmenu", colors.on_surface, bg_pmenu)
-  set_hl("PmenuSel", colors.on_primary, colors.primary, "bold") -- Selected item in pop-up menu
-  set_hl("PmenuSbar", nil, colors.surface_container_low) -- Scrollbar in pop-up menu
-  set_hl("PmenuThumb", nil, colors.primary) -- Thumb of the scrollbar
+  set_hl("PmenuSel", colors.on_primary, colors.primary, "bold")
+  set_hl("PmenuSbar", nil, colors.surface_container_low)
+  set_hl("PmenuThumb", nil, colors.primary)
   set_hl("FloatFooter", colors.on_surface_variant, bg_float)
   set_hl("FloatHeader", colors.on_surface, bg_float, "bold")
 
   --- Line Numbers, Sign Column, Fold Column (better visibility) ---
   set_hl("LineNr", ui_line_number_fg, bg_normal)
-  set_hl("LineNrAbove", ui_line_number_fg, bg_normal) -- Line number for lines above cursor
-  set_hl("LineNrBelow", ui_line_number_fg, bg_normal) -- Line number for lines below cursor
-  set_hl("SignColumn", ui_line_number_fg, bg_normal) -- Column for signs (e.g., diagnostics, git)
-  set_hl("FoldColumn", ui_line_number_fg, bg_normal) -- Column for folds
+  set_hl("LineNrAbove", ui_line_number_fg, bg_normal)
+  set_hl("LineNrBelow", ui_line_number_fg, bg_normal)
+  set_hl("SignColumn", ui_line_number_fg, bg_normal)
+  set_hl("FoldColumn", ui_line_number_fg, bg_normal)
 
-  --- IMPROVED: Cursorline and Number (much more visible) ---
-  set_hl("CursorLine", nil, bg_cursorline) -- Line where the cursor is
-  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold") -- Line number on cursor line
-  set_hl("CursorColumn", nil, bg_cursorline) -- Column where the cursor is
+  --- Cursorline and Number (much more visible) ---
+  set_hl("CursorLine", nil, bg_cursorline)
+  set_hl("CursorLineNr", colors.primary, bg_cursorline, "bold")
+  set_hl("CursorColumn", nil, bg_cursorline)
 
-  --- IMPROVED: Visual mode selection (more prominent) ---
-  set_hl("Visual", colors.on_primary_container, bg_visual) -- Visual mode selection
-  set_hl("VisualNOS", colors.on_primary_container, bg_visual) -- Visual mode selection (non-start)
+  --- Visual mode selection (more prominent) ---
+  set_hl("Visual", colors.on_primary_container, bg_visual)
+  set_hl("VisualNOS", colors.on_primary_container, bg_visual)
 
-  --- IMPROVED: Search and IncSearch (better contrast) ---
-  set_hl("IncSearch", colors.on_secondary, colors.secondary, "bold") -- Incremental search match
-  set_hl("Search", colors.on_tertiary_container, colors.tertiary_container) -- Other search matches
-  set_hl("CurSearch", colors.on_secondary, colors.secondary, "bold") -- Current search match (linked to IncSearch for consistency)
+  --- Search and IncSearch (better contrast) ---
+  set_hl("IncSearch", colors.on_secondary, colors.secondary, "bold")
+  set_hl("Search", colors.on_tertiary_container, colors.tertiary_container)
+  set_hl("CurSearch", colors.on_secondary, colors.secondary, "bold") -- Current search match
 
-  --- IMPROVED: Diagnostics (clearer and more intuitive) ---
-  -- Error messages (UI)
+  --- Diagnostics (clearer and more intuitive) ---
   set_hl("ErrorMsg", colors.on_error_container, colors.error_container, "bold")
-  set_hl("WarningMsg", colors.on_tertiary_container, colors.tertiary_container, "bold") -- Changed to tertiary container for distinct warning
+  set_hl("WarningMsg", colors.on_primary_container, colors.primary_container, "bold")
   set_hl("InfoMsg", colors.on_secondary_container, colors.secondary_container)
-  set_hl("HintMsg", colors.on_primary_container, colors.primary_container)
+  set_hl("HintMsg", colors.on_tertiary_container, colors.tertiary_container)
 
-  -- LSP Diagnostics (better mapping, using base colors for underlines/signs)
-  set_hl("DiagnosticError", colors.error, nil, "bold") -- Standard red for errors
-  set_hl("DiagnosticWarn", colors.tertiary, nil, "bold") -- Changed to tertiary for distinct warning color (often green/yellow)
-  set_hl("DiagnosticInfo", colors.secondary, nil, "bold") -- Changed to secondary for info (often blue/purple)
-  set_hl("DiagnosticHint", colors.outline, nil, "italic") -- Changed to outline for a subtle hint
+  -- LSP Diagnostics (better mapping)
+  set_hl("DiagnosticError", colors.error, nil, "bold")
+  set_hl("DiagnosticWarn", colors.primary, nil, "bold")
+  set_hl("DiagnosticInfo", colors.secondary)
+  set_hl("DiagnosticHint", colors.tertiary)
 
   -- Diagnostic underlines
   set_hl("DiagnosticUnderlineError", colors.error, nil, "underline")
-  set_hl("DiagnosticUnderlineWarn", colors.tertiary, nil, "underline") -- Matched with DiagnosticWarn
-  set_hl("DiagnosticUnderlineInfo", colors.secondary, nil, "underline") -- Matched with DiagnosticInfo
-  set_hl("DiagnosticUnderlineHint", colors.outline, nil, "underline") -- Matched with DiagnosticHint
+  set_hl("DiagnosticUnderlineWarn", colors.primary, nil, "underline")
+  set_hl("DiagnosticUnderlineInfo", colors.secondary, nil, "underline")
+  set_hl("DiagnosticUnderlineHint", colors.tertiary, nil, "underline")
 
   -- Legacy LSP diagnostics links
   set_hl_link("LspDiagnosticsError", "DiagnosticError")
@@ -195,79 +190,79 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("LspDiagnosticsInformation", "DiagnosticInfo")
   set_hl_link("LspDiagnosticsHint", "DiagnosticHint")
 
-  --- IMPROVED: Diffs (more intuitive colors) ---
-  set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container) -- Added lines (greenish)
-  set_hl("DiffChange", colors.on_secondary_container, colors.secondary_container) -- Changed lines (bluish/purplish)
-  set_hl("DiffDelete", colors.on_error_container, colors.error_container) -- Deleted lines (reddish)
-  set_hl("DiffText", colors.on_primary_container, colors.primary_container, "bold") -- Changed text within a line
+  --- Diffs (more intuitive colors) ---
+  set_hl("DiffAdd", colors.on_tertiary_container, colors.tertiary_container)
+  set_hl("DiffChange", colors.on_secondary_container, colors.secondary_container)
+  set_hl("DiffDelete", colors.on_error_container, colors.error_container)
+  set_hl("DiffText", colors.on_primary_container, colors.primary_container, "bold")
 
-  --- IMPROVED: Statusline and Tabline (clearer hierarchy) ---
-  set_hl("StatusLine", colors.on_surface, bg_statusline, "bold") -- Current window status line
-  set_hl("StatusLineNC", colors.on_surface_variant, bg_float) -- Non-current window status line
-  set_hl("TabLine", colors.on_surface_variant, bg_tabline) -- Tab line (inactive tabs)
-  set_hl("TabLineFill", colors.on_surface_variant, bg_tabline) -- Tab line fill area
-  set_hl("TabLineSel", colors.on_primary, colors.primary, "bold") -- Selected tab
+  --- Statusline and Tabline (clearer hierarchy) ---
+  set_hl("StatusLine", colors.on_surface, bg_statusline, "bold")
+  set_hl("StatusLineNC", colors.on_surface_variant, bg_float)
+  set_hl("TabLine", colors.on_surface_variant, bg_tabline)
+  set_hl("TabLineFill", colors.on_surface_variant, bg_tabline)
+  set_hl("TabLineSel", colors.on_primary, colors.primary, "bold")
 
   --- Command Line ---
   set_hl("CmdLine", colors.on_surface, bg_cmdline)
 
-  --- IMPROVED: Spell checking (more visible) ---
-  set_hl("SpellBad", colors.error, nil, "underline") -- Bad spelling
-  set_hl("SpellCap", colors.primary, nil, "underline") -- Capitalization error
-  set_hl("SpellRare", colors.secondary, nil, "underline") -- Rare word
-  set_hl("SpellLocal", colors.tertiary, nil, "underline") -- Word in local dictionary
+  --- Spell checking (more visible) ---
+  set_hl("SpellBad", colors.error, nil, "underline")
+  set_hl("SpellCap", colors.primary, nil, "underline")
+  set_hl("SpellRare", colors.secondary, nil, "underline")
+  set_hl("SpellLocal", colors.tertiary, nil, "underline")
 
-  --- IMPROVED: Other UI elements ---
-  set_hl("ColorColumn", nil, bg_col_line) -- Column for 'colorcolumn' option
-  set_hl("Cursor", colors.background, colors.on_background) -- Cursor color
-  set_hl("lCursor", colors.background, colors.on_background) -- Cursor in insert mode (local cursor)
-  set_hl("MatchParen", colors.on_primary_container, colors.primary_container, "bold") -- Matching parenthesis
-  set_hl("NonText", ui_normal_fg) -- '~' and other non-text characters
-  set_hl("Whitespace", ui_normal_fg) -- Whitespace characters if 'list' is on
-  set_hl("Conceal", colors.on_surface_variant) -- Concealed text
-  set_hl("Directory", colors.primary, nil, "bold") -- Directory names in file explorers
-  set_hl("Title", colors.primary, nil, "bold") -- Titles (e.g., help files)
-  set_hl("ModeMsg", colors.on_primary_container, colors.primary_container) -- Mode message (e.g., -- INSERT --)
-  set_hl("MoreMsg", colors.tertiary) -- Hit ENTER to continue message
-  set_hl("Question", colors.secondary) -- Question prompts
-  set_hl("Folded", colors.on_surface_variant, bg_statusline, "italic") -- Folded lines
-  set_hl("EndOfBuffer", ui_normal_fg) -- '~' characters at end of buffer
-  set_hl("SpecialKey", colors.on_surface_variant) -- Special keys (e.g., in 'list' mode)
+  --- Other UI elements ---
+  set_hl("ColorColumn", nil, bg_col_line)
+  set_hl("Cursor", colors.background, colors.on_background)
+  set_hl("lCursor", colors.background, colors.on_background)
+  set_hl("MatchParen", colors.on_primary_container, colors.primary_container, "bold")
+  set_hl("NonText", ui_normal_fg)
+  set_hl("Whitespace", ui_normal_fg)
+  set_hl("Conceal", colors.on_surface_variant)
+  set_hl("Directory", colors.primary, nil, "bold")
+  set_hl("Title", colors.primary, nil, "bold")
+  set_hl("ModeMsg", colors.on_primary_container, colors.primary_container)
+  set_hl("MoreMsg", colors.tertiary)
+  set_hl("Question", colors.secondary)
+  set_hl("Folded", colors.on_surface_variant, bg_statusline, "italic")
+  set_hl("EndOfBuffer", ui_normal_fg)
+  set_hl("SpecialKey", colors.on_surface_variant)
 
-  --- IMPROVED: Basic Syntax Highlighting ---
-  set_hl("Comment", colors.on_surface_variant, nil, "italic") -- Comments
-  set_hl("Constant", colors.tertiary) -- Constants (e.g., true, false, null)
-  set_hl("String", colors.secondary) -- String literals
-  set_hl("Character", colors.secondary) -- Character literals
-  set_hl("Number", colors.tertiary) -- Numeric literals
+  --- Basic Syntax Highlighting ---
+  set_hl("Comment", colors.on_surface_variant, nil, "italic")
+  set_hl("Constant", colors.tertiary)
+  set_hl("String", colors.secondary)
+  set_hl("Character", colors.secondary)
+  set_hl("Number", colors.tertiary)
   set_hl("Boolean", colors.error, nil, "bold") -- More prominent for booleans
-  set_hl("Float", colors.tertiary) -- Floating point numbers
-  set_hl("Identifier", colors.on_surface) -- Identifiers (variable names)
-  set_hl("Function", colors.primary, nil, "bold") -- Function names
-  set_hl("Statement", colors.primary, nil, "bold") -- Statements (e.g., if, for, while)
-  set_hl("Conditional", colors.primary, nil, "bold") -- Conditional statements
-  set_hl("Repeat", colors.primary, nil, "bold") -- Loop statements
-  set_hl("Label", colors.primary) -- Labels (e.g., goto labels)
-  set_hl("Operator", colors.on_surface_variant) -- Operators (+, -, =, etc.)
-  set_hl("Keyword", colors.primary, nil, "bold") -- Keywords
-  set_hl("Exception", colors.error, nil, "bold") -- Exception keywords (e.g., throw, catch)
-  set_hl("PreProc", colors.secondary) -- Preprocessor directives
-  set_hl("Include", colors.secondary) -- Include statements
-  set_hl("Define", colors.secondary) -- Define statements
-  set_hl("Macro", colors.secondary) -- Macro definitions
-  set_hl("PreCondit", colors.secondary) -- Preprocessor conditionals
-  set_hl("Type", colors.secondary, nil, "bold") -- Type names
-  set_hl("StorageClass", colors.secondary) -- Storage class specifiers
-  set_hl("Structure", colors.secondary) -- Structure names
-  set_hl("Typedef", colors.secondary) -- Typedef names
-  set_hl("Special", colors.tertiary) -- Special characters
-  set_hl("SpecialChar", colors.tertiary) -- Special characters in strings
-  set_hl("Tag", colors.primary) -- Tags (e.g., HTML/XML tags)
-  set_hl("Delimiter", colors.outline) -- Delimiters (e.g., parentheses, braces)
-  set_hl("SpecialComment", colors.tertiary, nil, "italic") -- Special comments (e.g., TODO, FIXME)
-  set_hl("Underlined", nil, nil, "underline") -- Underlined text
-  set_hl("Ignore", colors.background, colors.background) -- Ignored text (same as background)
-  set_hl("Todo", colors.on_tertiary_container, colors.tertiary_container, "bold") -- TODO comments
+  set_hl("Float", colors.tertiary)
+  set_hl("Identifier", colors.on_surface)
+  set_hl("Function", colors.primary, nil, "bold")
+  set_hl("Statement", colors.primary, nil, "bold")
+  set_hl("Conditional", colors.primary, nil, "bold")
+  set_hl("Repeat", colors.primary, nil, "bold")
+  set_hl("Label", colors.primary)
+  set_hl("Operator", colors.on_surface_variant)
+  set_hl("Keyword", colors.primary, nil, "bold")
+  set_hl("Exception", colors.error, nil, "bold")
+  set_hl("PreProc", colors.secondary)
+  set_hl("Include", colors.secondary)
+  set_hl("Define", colors.secondary)
+  set_hl("Macro", colors.secondary)
+  set_hl("PreCondit", colors.secondary)
+  set_hl("Type", colors.secondary, nil, "bold")
+  set_hl("StorageClass", colors.secondary)
+  set_hl("Structure", colors.secondary)
+  set_hl("Typedef", colors.secondary)
+  set_hl("Special", colors.tertiary)
+  set_hl("SpecialChar", colors.tertiary)
+  set_hl("Tag", colors.primary)
+  set_hl("Delimiter", colors.outline)
+  set_hl("SpecialComment", colors.tertiary, nil, "italic")
+  set_hl("Underlined", nil, nil, "underline")
+  set_hl("Ignore", colors.background, colors.background)
+  set_hl("Todo", colors.on_tertiary_container, colors.tertiary_container, "bold")
 
   -- Link common groups for consistency
   set_hl_link("htmlTag", "Tag")
@@ -290,193 +285,252 @@ local function apply_base_highlights(colors, background_style)
   set_hl_link("markdownHeading6", "Title")
 end
 
---- Applies Treesitter-specific highlight groups with enhanced contrast.
+--- Applies refined Treesitter-specific highlight groups with improved readability.
 --- @param colors table The table of color values (hex strings).
 local function apply_treesitter_highlights(colors)
   if M.config.disable_treesitter_highlights then
     return
   end
 
-  -- ENHANCED: More contrasting Treesitter highlight groups inspired by Rose Pine
-  -- Key principle: Use more distinct colors for different semantic elements
+  -- ============================================================================
+  -- CORE SYNTAX ELEMENTS
+  -- ============================================================================
 
-  -- Comments - muted but readable
-  set_hl("@comment", colors.on_surface_variant, nil, "italic")
-  set_hl("@comment.documentation", colors.outline, nil, "italic")
+  -- Comments - subtle but readable, consistent style
+  set_hl("@comment", colors.outline, nil, "italic")
 
-  -- Constants group - use tertiary for regular constants, primary for special ones
-  set_hl("@constant", colors.tertiary, nil, "bold")
-  set_hl("@constant.builtin", colors.primary, nil, "bold") -- More prominent for built-ins
-  set_hl("@constant.macro", colors.secondary, nil, "bold") -- Distinct color for macros
+  -- Constants - clear hierarchy with semantic meaning
+  set_hl("@constant", colors.tertiary)
+  set_hl("@constant.builtin", colors.primary, nil, "bold") -- Built-ins more prominent
+  set_hl("@constant.macro", colors.secondary) -- Macros distinct but not overwhelming
 
-  -- Strings - keep secondary but enhance special strings
+  -- Strings - clean and consistent
   set_hl("@string", colors.secondary)
-  set_hl("@string.escape", colors.primary, nil, "bold") -- Make escapes pop
-  set_hl("@string.special", colors.tertiary, nil, "bold") -- Special strings more visible
-  set_hl("@string.regexp", colors.error, nil, "bold") -- Regex strings stand out
+  set_hl("@string.escape", colors.primary, nil, "bold") -- Escapes need attention
+  set_hl("@string.special", colors.tertiary)
+  set_hl("@string.regexp", colors.error) -- Regex distinct but not overpowering
 
   -- Character literals
   set_hl("@character", colors.secondary)
-  set_hl("@character.special", colors.primary, nil, "bold")
+  set_hl("@character.special", colors.primary)
 
-  -- Numbers - tertiary but with better distinction
-  set_hl("@number", colors.tertiary, nil, "bold")
-  set_hl("@number.float", colors.tertiary, nil, "bold,italic")
+  -- Numbers - clear but not distracting
+  set_hl("@number", colors.tertiary)
+  set_hl("@number.float", colors.tertiary, nil, "italic")
 
-  -- Booleans - highly contrasting (Rose Pine principle)
-  set_hl("@boolean", colors.error, nil, "bold")
+  -- Booleans - important but not jarring
+  set_hl("@boolean", colors.primary, nil, "bold")
 
-  -- Variables - create hierarchy with different weights
+  -- ============================================================================
+  -- VARIABLES AND IDENTIFIERS
+  -- ============================================================================
+
+  -- Variables - subtle hierarchy without visual noise
   set_hl("@variable", colors.on_surface)
-  set_hl("@variable.builtin", colors.primary, nil, "bold,italic") -- Built-in variables stand out
-  set_hl("@variable.parameter", colors.on_surface, nil, "italic") -- Parameters slightly different
-  set_hl("@variable.member", colors.tertiary) -- Object members more visible
-  set_hl("@property", colors.tertiary) -- Properties same as members
+  set_hl("@variable.builtin", colors.primary, nil, "italic") -- Built-ins stand out
+  set_hl("@variable.parameter", colors.on_surface, nil, "italic") -- Parameters subtle
+  set_hl("@variable.member", colors.tertiary) -- Object members visible
+  set_hl("@property", colors.tertiary) -- Consistent with members
+  set_hl("@field", colors.tertiary) -- Struct/class fields
 
-  -- Functions - enhanced hierarchy and contrast
+  -- ============================================================================
+  -- FUNCTIONS AND METHODS
+  -- ============================================================================
+
+  -- Functions - clear hierarchy without over-styling
   set_hl("@function", colors.primary, nil, "bold")
-  set_hl("@function.call", colors.primary) -- Function calls less bold
-  set_hl("@function.builtin", colors.secondary, nil, "bold") -- Built-in functions distinct
-  set_hl("@function.macro", colors.error, nil, "bold") -- Macros highly visible
+  set_hl("@function.call", colors.primary) -- Calls less prominent
+  set_hl("@function.builtin", colors.secondary, nil, "bold") -- Built-ins distinct
+  set_hl("@function.macro", colors.error) -- Macros stand out
   set_hl("@method", colors.primary, nil, "bold")
   set_hl("@method.call", colors.primary)
-  set_hl("@constructor", colors.secondary, nil, "bold") -- Constructors distinct
+  set_hl("@constructor", colors.secondary, nil, "bold")
 
-  -- Keywords - enhanced contrast and semantic grouping
+  -- ============================================================================
+  -- KEYWORDS AND OPERATORS
+  -- ============================================================================
+
+  -- Keywords - semantic grouping with consistent weight
   set_hl("@keyword", colors.primary, nil, "bold")
-  set_hl("@keyword.function", colors.secondary, nil, "bold") -- Function keywords distinct
-  set_hl("@keyword.operator", colors.tertiary, nil, "bold") -- Operator keywords
-  set_hl("@keyword.return", colors.error, nil, "bold") -- Return statements prominent
+  set_hl("@keyword.function", colors.secondary, nil, "bold") -- Function keywords
+  set_hl("@keyword.operator", colors.tertiary) -- Operator keywords subtle
+  set_hl("@keyword.return", colors.error, nil, "bold") -- Return statements important
   set_hl("@keyword.conditional", colors.primary, nil, "bold")
   set_hl("@keyword.repeat", colors.primary, nil, "bold")
-  set_hl("@keyword.import", colors.secondary, nil, "bold") -- Import/include statements
-  set_hl("@keyword.export", colors.secondary, nil, "bold")
-  set_hl("@keyword.storage", colors.secondary, nil, "bold") -- Storage class keywords
-  set_hl("@keyword.modifier", colors.tertiary, nil, "bold") -- Modifiers like static, const
+  set_hl("@keyword.import", colors.secondary) -- Import statements clean
+  set_hl("@keyword.export", colors.secondary)
+  set_hl("@keyword.storage", colors.secondary) -- Storage class keywords
+  set_hl("@keyword.modifier", colors.tertiary) -- Modifiers subtle
 
-  -- Operators - more visible
-  set_hl("@operator", colors.tertiary, nil, "bold")
+  -- Operators - visible but not overwhelming
+  set_hl("@operator", colors.tertiary)
 
-  -- Control flow - highly visible
+  -- Control flow - important but balanced
   set_hl("@conditional", colors.primary, nil, "bold")
   set_hl("@repeat", colors.primary, nil, "bold")
-  set_hl("@label", colors.secondary, nil, "bold")
+  set_hl("@label", colors.secondary)
   set_hl("@exception", colors.error, nil, "bold")
 
-  -- Includes and modules
-  set_hl("@include", colors.secondary, nil, "bold")
-  set_hl("@namespace", colors.tertiary, nil, "bold")
-  set_hl("@module", colors.tertiary, nil, "bold")
+  -- ============================================================================
+  -- MODULES AND NAMESPACES
+  -- ============================================================================
 
-  -- Types - enhanced hierarchy
-  set_hl("@type", colors.secondary, nil, "bold")
-  set_hl("@type.builtin", colors.primary, nil, "bold") -- Built-in types more prominent
-  set_hl("@type.qualifier", colors.tertiary, nil, "bold") -- Type qualifiers distinct
-  set_hl("@type.definition", colors.secondary, nil, "bold,underline") -- Type definitions
-  set_hl("@storageclass", colors.tertiary, nil, "bold")
+  set_hl("@include", colors.secondary)
+  set_hl("@namespace", colors.tertiary)
+  set_hl("@module", colors.tertiary)
 
-  -- Attributes and annotations
-  set_hl("@attribute", colors.error, nil, "bold") -- Attributes/decorators stand out
-  set_hl("@annotation", colors.error, nil, "bold")
+  -- ============================================================================
+  -- TYPES AND CLASSES
+  -- ============================================================================
 
-  -- Punctuation - enhanced visibility
-  set_hl("@punctuation.delimiter", colors.outline, nil, "bold")
-  set_hl("@punctuation.bracket", colors.outline, nil, "bold")
-  set_hl("@punctuation.special", colors.primary, nil, "bold")
+  -- Types - clear hierarchy without over-decoration
+  set_hl("@type", colors.secondary)
+  set_hl("@type.builtin", colors.primary, nil, "bold") -- Built-in types prominent
+  set_hl("@type.qualifier", colors.tertiary) -- Type qualifiers subtle
+  set_hl("@type.definition", colors.secondary, nil, "underline") -- Definitions marked
+  set_hl("@storageclass", colors.tertiary)
 
-  -- Tags (HTML/XML) - better contrast
-  set_hl("@tag", colors.primary, nil, "bold")
-  set_hl("@tag.attribute", colors.tertiary, nil, "bold")
-  set_hl("@tag.delimiter", colors.outline, nil, "bold")
+  -- ============================================================================
+  -- ATTRIBUTES AND ANNOTATIONS
+  -- ============================================================================
 
-  -- Text content and formatting
+  set_hl("@attribute", colors.error) -- Attributes/decorators noticeable
+  set_hl("@annotation", colors.error)
+
+  -- ============================================================================
+  -- PUNCTUATION AND DELIMITERS
+  -- ============================================================================
+
+  -- Punctuation - subtle but clear structure
+  set_hl("@punctuation.delimiter", colors.outline)
+  set_hl("@punctuation.bracket", colors.outline)
+  set_hl("@punctuation.special", colors.primary)
+
+  -- ============================================================================
+  -- MARKUP AND TAGS
+  -- ============================================================================
+
+  -- Tags (HTML/XML) - clean hierarchy
+  set_hl("@tag", colors.primary)
+  set_hl("@tag.attribute", colors.tertiary)
+  set_hl("@tag.delimiter", colors.outline)
+
+  -- Text content - readable and well-structured
   set_hl("@text", colors.on_background)
-  set_hl("@text.literal", colors.secondary, nil, "bold") -- Code blocks more visible
-  set_hl("@text.reference", colors.primary, nil, "bold")
+  set_hl("@text.literal", colors.secondary) -- Code blocks distinct
+  set_hl("@text.reference", colors.primary)
   set_hl("@text.title", colors.primary, nil, "bold")
-  set_hl("@text.uri", colors.tertiary, nil, "underline,bold")
+  set_hl("@text.uri", colors.tertiary, nil, "underline")
   set_hl("@text.underline", nil, nil, "underline")
-  set_hl("@text.todo", colors.on_tertiary_container, colors.tertiary_container, "bold")
-  set_hl("@text.warning", colors.on_primary_container, colors.primary_container, "bold")
-  set_hl("@text.danger", colors.on_error_container, colors.error_container, "bold")
-  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container, "bold")
-  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container, "bold")
 
-  -- Markdown specific - enhanced hierarchy
+  -- Semantic text highlighting with consistent containers
+  set_hl("@text.todo", colors.on_tertiary_container, colors.tertiary_container, "bold")
+  set_hl("@text.warning", colors.on_primary_container, colors.primary_container)
+  set_hl("@text.danger", colors.on_error_container, colors.error_container, "bold")
+  set_hl("@text.info", colors.on_secondary_container, colors.secondary_container)
+  set_hl("@text.hint", colors.on_tertiary_container, colors.tertiary_container)
+
+  -- ============================================================================
+  -- MARKDOWN SPECIFIC
+  -- ============================================================================
+
+  -- Markdown - clear hierarchy without overwhelming decoration
   set_hl("@markup.heading", colors.primary, nil, "bold")
   set_hl("@markup.heading.1", colors.primary, nil, "bold,underline")
   set_hl("@markup.heading.2", colors.secondary, nil, "bold")
   set_hl("@markup.heading.3", colors.tertiary, nil, "bold")
-  set_hl("@markup.heading.4", colors.primary, nil, "bold")
-  set_hl("@markup.heading.5", colors.secondary, nil, "bold")
-  set_hl("@markup.heading.6", colors.tertiary, nil, "bold")
-  set_hl("@markup.raw", colors.secondary, colors.surface_container, "bold")
-  set_hl("@markup.raw.block", colors.secondary, colors.surface_container, "bold")
-  set_hl("@markup.list", colors.tertiary, nil, "bold")
-  set_hl("@markup.list.checked", colors.tertiary, nil, "bold")
-  set_hl("@markup.list.unchecked", colors.outline, nil, "bold")
-  set_hl("@markup.link", colors.primary, nil, "underline,bold")
-  set_hl("@markup.link.label", colors.primary, nil, "bold")
-  set_hl("@markup.link.url", colors.tertiary, nil, "underline,bold")
+  set_hl("@markup.heading.4", colors.primary)
+  set_hl("@markup.heading.5", colors.secondary)
+  set_hl("@markup.heading.6", colors.tertiary)
+
+  -- Code blocks and inline code
+  set_hl("@markup.raw", colors.secondary, colors.surface_container)
+  set_hl("@markup.raw.block", colors.secondary, colors.surface_container)
+
+  -- Lists and links
+  set_hl("@markup.list", colors.tertiary)
+  set_hl("@markup.list.checked", colors.tertiary)
+  set_hl("@markup.list.unchecked", colors.outline)
+  set_hl("@markup.link", colors.primary, nil, "underline")
+  set_hl("@markup.link.label", colors.primary)
+  set_hl("@markup.link.url", colors.tertiary, nil, "underline")
+
+  -- Text formatting - subtle but clear
   set_hl("@markup.italic", colors.on_surface, nil, "italic")
   set_hl("@markup.bold", colors.on_surface, nil, "bold")
   set_hl("@markup.strikethrough", colors.on_surface_variant, nil, "strikethrough")
   set_hl("@markup.quote", colors.on_surface_variant, colors.surface_container, "italic")
 
-  -- Diff - more contrasting
-  set_hl("@diff.minus", colors.on_error_container, colors.error_container, "bold")
-  set_hl("@diff.plus", colors.on_tertiary_container, colors.tertiary_container, "bold")
-  set_hl("@diff.delta", colors.on_primary_container, colors.primary_container, "bold")
+  -- ============================================================================
+  -- DIFF AND VERSION CONTROL
+  -- ============================================================================
 
-  -- Diagnostic (TS) - enhanced visibility
-  set_hl("@diagnostic.error", colors.error, nil, "bold") -- Standard red for errors
-  set_hl("@diagnostic.warning", colors.tertiary, nil, "bold") -- Changed to tertiary for distinct warning color (often green/yellow)
-  set_hl("@diagnostic.info", colors.secondary, nil, "bold") -- Changed to secondary for info (often blue/purple)
-  set_hl("@diagnostic.hint", colors.outline, nil, "italic") -- Changed to outline for a subtle hint
+  set_hl("@diff.minus", colors.on_error_container, colors.error_container)
+  set_hl("@diff.plus", colors.on_tertiary_container, colors.tertiary_container)
+  set_hl("@diff.delta", colors.on_primary_container, colors.primary_container)
 
-  -- LSP semantic tokens - enhanced contrast
+  -- ============================================================================
+  -- DIAGNOSTICS
+  -- ============================================================================
+
+  -- Diagnostic highlighting - clear but not overwhelming
+  set_hl("@diagnostic.error", colors.error)
+  set_hl("@diagnostic.warning", colors.primary)
+  set_hl("@diagnostic.info", colors.secondary)
+  set_hl("@diagnostic.hint", colors.tertiary)
+
+  -- ============================================================================
+  -- LSP SEMANTIC TOKENS
+  -- ============================================================================
+
+  -- LSP semantic tokens - consistent with Treesitter
   set_hl("@lsp.type.comment", colors.on_surface_variant, nil, "italic")
   set_hl("@lsp.type.keyword", colors.primary, nil, "bold")
   set_hl("@lsp.type.variable", colors.on_surface)
   set_hl("@lsp.type.parameter", colors.on_surface, nil, "italic")
-  set_hl("@lsp.type.property", colors.tertiary, nil, "bold")
+  set_hl("@lsp.type.property", colors.tertiary)
   set_hl("@lsp.type.function", colors.primary, nil, "bold")
   set_hl("@lsp.type.method", colors.primary, nil, "bold")
-  set_hl("@lsp.type.enumMember", colors.tertiary, nil, "bold")
-  set_hl("@lsp.type.namespace", colors.secondary, nil, "bold")
-  set_hl("@lsp.type.type", colors.secondary, nil, "bold")
-  set_hl("@lsp.type.interface", colors.secondary, nil, "bold,italic")
-  set_hl("@lsp.type.struct", colors.secondary, nil, "bold")
-  set_hl("@lsp.type.enum", colors.secondary, nil, "bold")
-  set_hl("@lsp.type.class", colors.secondary, nil, "bold,underline")
-  set_hl("@lsp.type.event", colors.tertiary, nil, "bold")
-  set_hl("@lsp.type.macro", colors.error, nil, "bold")
-  set_hl("@lsp.type.decorator", colors.error, nil, "bold")
-  set_hl("@lsp.type.modifier", colors.tertiary, nil, "bold")
+  set_hl("@lsp.type.enumMember", colors.tertiary)
+  set_hl("@lsp.type.namespace", colors.secondary)
+  set_hl("@lsp.type.type", colors.secondary)
+  set_hl("@lsp.type.interface", colors.secondary, nil, "italic")
+  set_hl("@lsp.type.struct", colors.secondary)
+  set_hl("@lsp.type.enum", colors.secondary)
+  set_hl("@lsp.type.class", colors.secondary, nil, "underline")
+  set_hl("@lsp.type.event", colors.tertiary)
+  set_hl("@lsp.type.macro", colors.error)
+  set_hl("@lsp.type.decorator", colors.error)
+  set_hl("@lsp.type.modifier", colors.tertiary)
 
-  -- Language-specific enhancements
+  -- ============================================================================
+  -- LANGUAGE-SPECIFIC ENHANCEMENTS
+  -- ============================================================================
+
   -- JavaScript/TypeScript
-  set_hl("@lsp.type.typeParameter", colors.primary, nil, "bold,italic")
+  set_hl("@lsp.type.typeParameter", colors.primary, nil, "italic")
   set_hl("@constructor.typescript", colors.secondary, nil, "bold")
   set_hl("@constructor.javascript", colors.secondary, nil, "bold")
 
   -- Rust
-  set_hl("@lsp.type.lifetime", colors.error, nil, "bold,italic")
-  set_hl("@lsp.type.selfKeyword", colors.primary, nil, "bold,italic")
+  set_hl("@lsp.type.lifetime", colors.error, nil, "italic")
+  set_hl("@lsp.type.selfKeyword", colors.primary, nil, "italic")
 
   -- Python
-  set_hl("@lsp.type.decorator.python", colors.error, nil, "bold")
-  set_hl("@lsp.type.selfParameter", colors.primary, nil, "bold,italic")
+  set_hl("@lsp.type.decorator.python", colors.error)
+  set_hl("@lsp.type.selfParameter", colors.primary, nil, "italic")
 
   -- C/C++
-  set_hl("@lsp.type.concept", colors.secondary, nil, "bold,italic")
-  set_hl("@preproc", colors.secondary, nil, "bold")
+  set_hl("@lsp.type.concept", colors.secondary, nil, "italic")
+  set_hl("@preproc", colors.secondary)
 
-  -- Additional semantic enhancements
-  set_hl("@field", colors.tertiary) -- Struct/class fields
-  set_hl("@constant.macro", colors.secondary, nil, "bold") -- Macro constants
-  set_hl("@define", colors.secondary, nil, "bold") -- Preprocessor defines
-  set_hl("@symbol", colors.primary, nil, "bold") -- Symbols
+  -- ============================================================================
+  -- ADDITIONAL SEMANTIC ELEMENTS
+  -- ============================================================================
+
+  set_hl("@constant.macro", colors.secondary) -- Macro constants
+  set_hl("@define", colors.secondary) -- Preprocessor defines
+  set_hl("@symbol", colors.primary) -- Symbols
   set_hl("@embedded", colors.on_surface, colors.surface_container) -- Embedded code
 end
 
@@ -565,25 +619,25 @@ local function set_terminal_colors(colors)
     return
   end
 
-  -- IMPROVED: Better terminal color mapping for a balanced look
+  -- Better terminal color mapping
   local term_colors = {
-    colors.surface_container_high or colors.surface, -- 0: Black (dark background)
+    colors.surface_container_high or colors.surface, -- 0: Black
     colors.error, -- 1: Red
     colors.tertiary, -- 2: Green
     colors.secondary, -- 3: Yellow
     colors.primary, -- 4: Blue
-    colors.error_container, -- 5: Magenta (using container for a slightly softer tone)
-    colors.secondary_container, -- 6: Cyan (using container for a slightly softer tone)
-    colors.on_surface, -- 7: White (main text color)
+    colors.error_container, -- 5: Magenta
+    colors.secondary_container, -- 6: Cyan
+    colors.on_surface, -- 7: White
 
-    colors.outline, -- 8: Bright Black (dark gray)
-    colors.on_error_container, -- 9: Bright Red (on-container for more vibrancy)
+    colors.outline, -- 8: Bright Black
+    colors.on_error_container, -- 9: Bright Red
     colors.on_tertiary_container, -- 10: Bright Green
     colors.on_secondary_container, -- 11: Bright Yellow
     colors.on_primary_container, -- 12: Bright Blue
-    colors.on_error, -- 13: Bright Magenta (using on_error for strong contrast)
+    colors.on_error, -- 13: Bright Magenta
     colors.on_secondary, -- 14: Bright Cyan
-    colors.on_background, -- 15: Bright White (pure white)
+    colors.on_background, -- 15: Bright White
   }
 
   for i = 0, 15 do
