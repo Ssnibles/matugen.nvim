@@ -1,56 +1,221 @@
 local M = {}
 
---- Applies Lualine specific highlight groups.
+--- Applies Lualine specific highlight groups with enhanced styling
 --- @param colors table The table of colors parsed from Matugen.
 --- @param config table The plugin's configuration table.
 --- @param set_hl function Helper function to set highlight groups.
 function M.apply(colors, config, set_hl)
+  -- Define style presets
+  local styles = {
+    bold = { "bold" },
+    italic = { "italic" },
+  }
+
+  -- Semantic color aliases
+  local C = {
+    primary = colors.primary or "#F5BD62",
+    primary_container = colors.primary_container or "#604100",
+    on_primary_container = colors.on_primary_container or "#FFDDAE",
+
+    secondary = colors.secondary or "#C6C2EA",
+    secondary_container = colors.secondary_container or "#454364",
+    on_secondary_container = colors.on_secondary_container or "#E3DFFF",
+
+    tertiary = colors.tertiary or "#8ED1DF",
+    tertiary_container = colors.tertiary_container or "#004E5A",
+    on_tertiary_container = colors.on_tertiary_container or "#AAEDFC",
+
+    error = colors.error or "#FFB4AB",
+    error_container = colors.error_container or "#93000A",
+    on_error_container = colors.on_error_container or "#FFDAD6",
+
+    surface = colors.surface or "#0C1517",
+    on_surface = colors.on_surface or "#DBE4E7",
+    on_surface_variant = colors.on_surface_variant or "#B8C9CE",
+
+    surface_container_high = colors.surface_container_high or "#232B2D",
+    surface_container_highest = colors.surface_container_highest or "#2D3638",
+    surface_container_low = colors.surface_container_low or "#141D1F",
+
+    outline = colors.outline or "#839498",
+    outline_variant = colors.outline_variant or "#3A494D",
+  }
+
   -- Active sections
-  set_hl("LualineNormal", colors.on_primary_container, colors.primary_container) -- Overall active statusline
-  set_hl("LualineA", colors.primary, colors.primary_container, "bold") -- Mode indicator (e.g., NORMAL, INSERT)
-  set_hl("LualineB", colors.on_primary_container, colors.surface_container_high) -- Section B (e.g., git branch)
-  set_hl("LualineC", colors.on_surface, colors.surface_container_low) -- Main section C (e.g., file path)
-  set_hl("LualineX", colors.on_surface, colors.surface_container_low) -- Main section X (e.g., file type)
-  set_hl("LualineY", colors.on_primary_container, colors.surface_container_high) -- Section Y (e.g., diagnostics)
-  set_hl("LualineZ", colors.primary, colors.primary_container, "bold") -- End section Z (e.g., line/col)
+  set_hl("LualineNormal", {
+    fg = C.on_primary_container,
+    bg = C.primary_container,
+  })
+
+  set_hl("LualineA", {
+    fg = C.primary,
+    bg = C.primary_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineB", {
+    fg = C.on_primary_container,
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineC", {
+    fg = C.on_surface,
+    bg = C.surface_container_low,
+  })
+
+  set_hl("LualineX", {
+    fg = C.on_surface,
+    bg = C.surface_container_low,
+  })
+
+  set_hl("LualineY", {
+    fg = C.on_primary_container,
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineZ", {
+    fg = C.primary,
+    bg = C.primary_container,
+    style = styles.bold,
+  })
 
   -- Inactive sections (for inactive windows)
-  set_hl("LualineInactive", colors.on_surface_variant, colors.surface_container_high) -- Overall inactive statusline
-  set_hl("LualineAInactive", colors.on_surface_variant, colors.surface_container_highest)
-  set_hl("LualineBInactive", colors.on_surface_variant, colors.surface_container_highest)
-  set_hl("LualineCInactive", colors.outline_variant, colors.surface_container_high)
-  set_hl("LualineXInactive", colors.outline_variant, colors.surface_container_high)
-  set_hl("LualineYInactive", colors.on_surface_variant, colors.surface_container_highest)
-  set_hl("LualineZInactive", colors.on_surface_variant, colors.surface_container_highest)
+  set_hl("LualineInactive", {
+    fg = C.on_surface_variant,
+    bg = C.surface_container_high,
+  })
 
-  -- Mode-specific colors (these are usually backgrounds for LualineA)
-  set_hl("LualineInsert", colors.on_secondary, colors.secondary) -- Brighter secondary for insert
-  set_hl("LualineVisual", colors.on_tertiary, colors.tertiary) -- Brighter tertiary for visual
-  set_hl("LualineReplace", colors.on_error, colors.error) -- Error color for replace
-  set_hl("LualineCommand", colors.on_primary, colors.primary) -- Primary for command line
+  set_hl("LualineAInactive", {
+    fg = C.on_surface_variant,
+    bg = C.surface_container_highest,
+  })
 
-  -- Define a lualine theme using these colors (optional, but good practice for custom themes)
-  -- This part requires lualine to be loaded, so ensure it's loaded before your colorscheme applies.
-  -- If you set a custom theme name, you'll need to set `lualine_setup.options.theme = 'your_theme_name'`
-  -- in your lualine configuration.
-  -- Example of defining a simple theme (you'd put this in your lualine setup):
-  -- local custom_lualine_theme = {
-  --     normal = {
-  --         a = { fg = colors.primary, bg = colors.primary_container, gui = "bold" },
-  --         b = { fg = colors.on_primary_container, bg = colors.surface_container_high },
-  --         c = { fg = colors.on_surface, bg = colors.surface_container_low },
-  --     },
-  --     inactive = {
-  --         a = { fg = colors.on_surface_variant, bg = colors.surface_container_highest },
-  --         b = { fg = colors.on_surface_variant, bg = colors.surface_container_highest },
-  --         c = { fg = colors.outline_variant, bg = colors.surface_container_high },
-  --     },
-  --     insert = { a = { fg = colors.on_secondary, bg = colors.secondary } },
-  --     visual = { a = { fg = colors.on_tertiary, bg = colors.tertiary } },
-  --     replace = { a = { fg = colors.on_error, bg = colors.error } },
-  --     command = { a = { fg = colors.on_primary, bg = colors.primary } },
-  -- }
-  -- require('lualine.themes').my_matugen_theme = custom_lualine_theme
+  set_hl("LualineBInactive", {
+    fg = C.on_surface_variant,
+    bg = C.surface_container_highest,
+  })
+
+  set_hl("LualineCInactive", {
+    fg = C.outline_variant,
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineXInactive", {
+    fg = C.outline_variant,
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineYInactive", {
+    fg = C.on_surface_variant,
+    bg = C.surface_container_highest,
+  })
+
+  set_hl("LualineZInactive", {
+    fg = C.on_surface_variant,
+    bg = C.surface_container_highest,
+  })
+
+  -- Mode-specific colors
+  set_hl("LualineInsert", {
+    fg = colors.on_secondary_container or "#E3DFFF",
+    bg = C.secondary_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineVisual", {
+    fg = colors.on_tertiary_container or "#AAEDFC",
+    bg = C.tertiary_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineReplace", {
+    fg = colors.on_error_container or "#FFDAD6",
+    bg = C.error_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineCommand", {
+    fg = colors.on_primary_container or "#FFDDAE",
+    bg = C.primary_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineTerminal", {
+    fg = colors.on_tertiary_container or "#AAEDFC",
+    bg = colors.tertiary_container or "#004E5A",
+    style = styles.bold,
+  })
+
+  set_hl("LualineSelect", {
+    fg = colors.on_secondary_container or "#E3DFFF",
+    bg = C.secondary_container,
+    style = styles.bold,
+  })
+
+  -- Diagnostic sections
+  set_hl("LualineDiagnosticsError", {
+    fg = colors.error or "#FFB4AB",
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineDiagnosticsWarn", {
+    fg = colors.primary or "#F5BD62",
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineDiagnosticsInfo", {
+    fg = colors.tertiary or "#8ED1DF",
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineDiagnosticsHint", {
+    fg = colors.outline or "#839498",
+    bg = C.surface_container_high,
+  })
+
+  -- Git status indicators
+  set_hl("LualineDiffAdded", {
+    fg = colors.tertiary_fixed or "#AAEDFC",
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineDiffModified", {
+    fg = colors.primary or "#F5BD62",
+    bg = C.surface_container_high,
+  })
+
+  set_hl("LualineDiffRemoved", {
+    fg = colors.error or "#FFB4AB",
+    bg = C.surface_container_high,
+  })
+
+  -- File status indicators
+  set_hl("LualineFileFormat", {
+    fg = C.on_primary_container,
+    bg = C.primary_container,
+  })
+
+  set_hl("LualineFileStatus", {
+    fg = C.on_surface,
+    bg = C.surface_container_low,
+  })
+
+  set_hl("LualineFileSize", {
+    fg = C.on_surface,
+    bg = C.surface_container_low,
+  })
+
+  -- Location indicators
+  set_hl("LualineLocation", {
+    fg = C.primary,
+    bg = C.primary_container,
+    style = styles.bold,
+  })
+
+  set_hl("LualineProgress", {
+    fg = C.primary,
+    bg = C.primary_container,
+  })
 end
 
 return M

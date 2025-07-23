@@ -3,168 +3,196 @@ local brighten = utils.brighten_hex
 
 local M = {}
 
---- Applies base Neovim highlight groups.
---- @param colors table The table of colors parsed from Matugen.
---- @param config table The plugin's configuration table (optional).
---- @param set_hl function Helper function to set highlight groups (group, fg, bg, style).
+--- Applies base Neovim highlight groups
+--- @param colors table Color palette
+--- @param config table Plugin configuration
+--- @param set_hl function Highlight setter function
 function M.apply(colors, config, set_hl)
-  --- Helper to apply multiple highlight groups from a table.
-  --- @param highlights table A table where keys are highlight groups, and values are {fg, bg, style}.
+  -- Helper to apply highlight groups in bulk
   local function apply_highlights(highlights)
-    for group, params in pairs(highlights) do
-      set_hl(group, params[1], params[2], params[3])
+    for group, opts in pairs(highlights) do
+      set_hl(group, opts)
     end
   end
 
-  -- Declare semantic aliases for colors to improve readability and reduce repetition.
-  local fg = colors.on_surface
-  local bg = colors.background
-  local brighten_bg = brighten(bg, 20) -- Brighten background by 20%.
-  local accent = colors.primary
-  local accent_bg = colors.primary_container
-  local sub_fg = colors.on_surface_variant
-  local sub_bg = colors.surface_container_high
-  local dim_bg = colors.surface_dim
-  local dim_fg = colors.outline_variant
-  local error_fg = colors.error
-  local error_bg = colors.error_container
-  local warn_fg = colors.primary_fixed_dim
-  local info_fg = colors.tertiary
-  local hint_fg = colors.outline
+  -- Define semantic color aliases
+  local semantic = {
+    fg = colors.on_surface or "NONE",
+    bg = colors.background or "NONE",
+    accent = colors.primary or "NONE",
+    sub_fg = colors.on_surface_variant or "NONE",
+    sub_bg = colors.surface_container_high or "NONE",
+    dim_fg = colors.outline_variant or "NONE",
+    dim_bg = colors.surface_dim or "NONE",
+    error_fg = colors.error or "NONE",
+    error_bg = colors.error_container or "NONE",
+    warn_fg = colors.primary_fixed_dim or "NONE",
+    info_fg = colors.tertiary or "NONE",
+    hint_fg = colors.outline or "NONE",
+    float_bg = colors.surface_container_low or "NONE",
+    surface_high = colors.surface_container_highest or "NONE",
+    accent_bg = colors.primary_container or "NONE",
+    brighten_bg = brighten(colors.background or "#000000", 20),
+  }
 
-  -- Define common styles.
-  local bold = "bold"
-  local italic = "italic"
-  local underline = "underline"
+  -- Define style presets
+  local styles = {
+    bold = { "bold" },
+    italic = { "italic" },
+    underline = { "underline" },
+    bold_italic = { "bold", "italic" },
+    bold_underline = { "bold", "underline" },
+  }
 
-  -- Apply base UI highlights.
-  apply_highlights({
+  -- Base highlight definitions
+  local highlights = {
     --------------------------------------------------------------------
-    -- Base UI Elements
+    -- Core UI Elements
     --------------------------------------------------------------------
-    ["Normal"] = { fg, bg },
-    ["NormalNC"] = { fg, dim_bg },
-    ["NormalFloat"] = { fg, colors.surface_container_low },
-    ["FloatBorder"] = { dim_fg, colors.surface_container_low },
-    ["Comment"] = { dim_fg, nil, italic },
-    ["Todo"] = { colors.on_primary_container, accent_bg, bold },
-    ["ErrorMsg"] = { colors.on_error_container, error_bg, bold },
-    ["WarningMsg"] = { colors.on_primary_container, accent_bg, bold },
-    ["ModeMsg"] = { colors.primary_fixed, nil, bold },
-    ["NonText"] = { dim_fg, nil },
-    ["SpecialKey"] = { dim_fg, nil },
-    ["Conceal"] = { dim_fg, nil },
+    Normal = { fg = semantic.fg, bg = semantic.bg },
+    NormalNC = { fg = semantic.fg, bg = semantic.dim_bg },
+    NormalFloat = { fg = semantic.fg, bg = semantic.float_bg },
+    FloatBorder = { fg = semantic.dim_fg, bg = semantic.float_bg },
+    Comment = { fg = semantic.dim_fg, style = styles.italic },
+    Todo = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+      style = styles.bold,
+    },
+
+    --------------------------------------------------------------------
+    -- Messages and Indicators
+    --------------------------------------------------------------------
+    ErrorMsg = {
+      fg = colors.on_error_container,
+      bg = semantic.error_bg,
+      style = styles.bold,
+    },
+    WarningMsg = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+      style = styles.bold,
+    },
+    ModeMsg = { fg = colors.primary_fixed, style = styles.bold },
+    NonText = { fg = semantic.dim_fg },
+    SpecialKey = { fg = semantic.dim_fg },
+    Conceal = { fg = semantic.dim_fg },
 
     --------------------------------------------------------------------
     -- Statusline & Tabs
     --------------------------------------------------------------------
-    ["StatusLine"] = { colors.on_primary_container, brighten_bg },
-    ["StatusLineNC"] = { sub_fg, accent_bg },
-    ["TabLine"] = { sub_fg, colors.surface_container_highest },
-    ["TabLineFill"] = { dim_bg, nil },
-    ["TabLineSel"] = { colors.on_primary_container, accent_bg, bold },
+    StatusLine = {
+      fg = colors.on_primary_container,
+      bg = semantic.brighten_bg,
+    },
+    StatusLineNC = {
+      fg = semantic.sub_fg,
+      bg = semantic.accent_bg,
+    },
+    TabLine = {
+      fg = semantic.sub_fg,
+      bg = semantic.surface_high,
+    },
+    TabLineFill = { bg = semantic.dim_bg },
+    TabLineSel = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+      style = styles.bold,
+    },
 
     --------------------------------------------------------------------
-    -- Line Numbers & Cursor Line
+    -- Line Numbers & Cursor
     --------------------------------------------------------------------
-    ["LineNr"] = { dim_fg, "NONE" },
-    ["CursorLine"] = { nil, sub_fg },
-    ["CursorLineNr"] = { colors.primary_fixed, "NONE", bold },
+    LineNr = { fg = semantic.dim_fg },
+    CursorLine = { bg = semantic.sub_bg },
+    CursorLineNr = {
+      fg = colors.primary_fixed,
+      style = styles.bold,
+    },
 
     --------------------------------------------------------------------
     -- Visual Modes & Search
     --------------------------------------------------------------------
-    ["Visual"] = { nil, colors.secondary_container },
-    ["Search"] = { colors.on_primary_container, accent_bg, bold },
-    ["IncSearch"] = { colors.on_primary_container, accent_bg, bold .. "," .. underline },
+    Visual = { bg = colors.secondary_container },
+    Search = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+      style = styles.bold,
+    },
+    IncSearch = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+      style = styles.bold_underline,
+    },
 
     --------------------------------------------------------------------
-    -- Folded & Sign Column
+    -- Folding & Signs
     --------------------------------------------------------------------
-    ["Folded"] = { sub_fg, sub_bg, italic },
-    ["SignColumn"] = { nil, "NONE" },
+    Folded = {
+      fg = semantic.sub_fg,
+      bg = semantic.sub_bg,
+      style = styles.italic,
+    },
+    SignColumn = { bg = "NONE" },
 
     --------------------------------------------------------------------
-    -- Popup Menu (Completion)
+    -- Completion Menu
     --------------------------------------------------------------------
-    ["Pmenu"] = { fg, colors.surface_container_highest },
-    ["PmenuSel"] = { colors.on_primary_container, accent_bg },
-    ["PmenuSbar"] = { nil, colors.surface_container_highest },
-    ["PmenuThumb"] = { nil, accent },
+    Pmenu = {
+      fg = semantic.fg,
+      bg = semantic.surface_high,
+    },
+    PmenuSel = {
+      fg = colors.on_primary_container,
+      bg = semantic.accent_bg,
+    },
+    PmenuSbar = { bg = semantic.surface_high },
+    PmenuThumb = { bg = semantic.accent },
 
     --------------------------------------------------------------------
     -- Diagnostics
     --------------------------------------------------------------------
-    ["DiagnosticError"] = { error_fg, nil, bold },
-    ["DiagnosticWarn"] = { warn_fg, nil, bold },
-    ["DiagnosticInfo"] = { info_fg, nil }, -- You already have this
-    ["DiagnosticHint"] = { hint_fg, nil },
+    DiagnosticError = { fg = semantic.error_fg, style = styles.bold },
+    DiagnosticWarn = { fg = semantic.warn_fg, style = styles.bold },
+    DiagnosticInfo = { fg = semantic.info_fg },
+    DiagnosticHint = { fg = semantic.hint_fg },
 
-    ["DiagnosticUnderlineError"] = { nil, nil, underline },
-    ["DiagnosticUnderlineWarn"] = { nil, nil, underline },
-    ["DiagnosticUnderlineInfo"] = { nil, nil, underline }, -- You already have this
-    ["DiagnosticUnderlineHint"] = { nil, nil, underline },
+    DiagnosticUnderlineError = { style = styles.underline },
+    DiagnosticUnderlineWarn = { style = styles.underline },
+    DiagnosticUnderlineInfo = { style = styles.underline },
+    DiagnosticUnderlineHint = { style = styles.underline },
 
-    -- Add these for virtual text and signs
-    ["DiagnosticVirtualTextInfo"] = { info_fg, nil, italic }, -- Or just { info_fg }
-    ["DiagnosticVirtualTextWarn"] = { warn_fg, nil, italic },
-    ["DiagnosticVirtualTextError"] = { error_fg, nil, italic },
-    ["DiagnosticVirtualTextHint"] = { hint_fg, nil, italic },
+    DiagnosticVirtualTextError = {
+      fg = semantic.error_fg,
+      style = styles.italic,
+    },
+    DiagnosticVirtualTextWarn = {
+      fg = semantic.warn_fg,
+      style = styles.italic,
+    },
+    DiagnosticVirtualTextInfo = {
+      fg = semantic.info_fg,
+      style = styles.italic,
+    },
+    DiagnosticVirtualTextHint = {
+      fg = semantic.hint_fg,
+      style = styles.italic,
+    },
 
-    ["DiagnosticSignInfo"] = { info_fg, nil },
-    ["DiagnosticSignWarn"] = { warn_fg, nil },
-    ["DiagnosticSignError"] = { error_fg, nil },
-    ["DiagnosticSignHint"] = { hint_fg, nil },
+    DiagnosticSignError = { fg = semantic.error_fg },
+    DiagnosticSignWarn = { fg = semantic.warn_fg },
+    DiagnosticSignInfo = { fg = semantic.info_fg },
+    DiagnosticSignHint = { fg = semantic.hint_fg },
+
     --------------------------------------------------------------------
-    -- Git Gutter / Sign Column
+    -- Version Control
     --------------------------------------------------------------------
-    ["GitGutterAdd"] = { colors.tertiary_fixed, nil },
-    ["GitGutterChange"] = { colors.primary_fixed, nil },
-    ["GitGutterDelete"] = { error_fg, nil },
+    GitGutterAdd = { fg = colors.tertiary_fixed },
+    GitGutterChange = { fg = colors.primary_fixed },
+    GitGutterDelete = { fg = semantic.error_fg },
+  }
 
-    --------------------------------------------------------------------
-    -- Common Syntax Groups
-    --------------------------------------------------------------------
-    -- Keywords and Statements
-    ["Keyword"] = { colors.primary_fixed, nil, bold },
-    ["Statement"] = { colors.primary_fixed, nil, bold },
-    ["Conditional"] = { colors.primary_fixed, nil, bold },
-    ["Repeat"] = { colors.primary_fixed, nil, bold },
-    ["Label"] = { colors.tertiary_fixed, nil, bold },
-    ["Operator"] = { colors.tertiary_fixed, nil, bold },
-    ["PreProc"] = { colors.tertiary_fixed, nil },
-    ["Include"] = { colors.primary_fixed, nil, bold },
-    ["Define"] = { colors.primary_fixed, nil, bold },
-    ["Exception"] = { error_fg, nil, bold },
-    ["PreCondit"] = { colors.primary_fixed, nil },
-    ["StorageClass"] = { colors.tertiary_fixed, nil, bold },
-    ["Structure"] = { colors.tertiary_fixed, nil, bold },
-    ["Typedef"] = { colors.tertiary_fixed, nil, bold },
-    ["Macro"] = { colors.tertiary_fixed, nil, bold },
-
-    -- Identifiers, Functions, Types
-    ["Identifier"] = { fg, nil },
-    ["Function"] = { colors.secondary_fixed, nil, bold },
-    ["Type"] = { colors.tertiary_fixed, nil, bold },
-
-    -- Literals (Strings, Numbers, Booleans, etc.)
-    ["Character"] = { colors.tertiary_fixed_dim, nil },
-    ["String"] = { colors.secondary_fixed_dim, nil },
-    ["Number"] = { colors.tertiary_fixed_dim, nil, bold },
-    ["Boolean"] = { colors.primary_fixed_dim, nil, bold },
-    ["Float"] = { colors.tertiary_fixed_dim, nil, bold },
-    ["Constant"] = { colors.primary_fixed_dim, nil, bold },
-
-    -- Miscellaneous
-    ["Delimiter"] = { dim_fg, nil },
-    ["Title"] = { colors.primary_fixed, nil, bold },
-    ["Underlined"] = { colors.primary_fixed, nil, underline },
-    ["Error"] = { error_fg, nil, bold },
-    ["Debug"] = { colors.tertiary_fixed, nil },
-    ["Special"] = { colors.secondary_fixed, nil, bold },
-    ["SpecialChar"] = { colors.tertiary_fixed, nil },
-    ["Tag"] = { colors.secondary_fixed, nil, bold },
-  })
+  apply_highlights(highlights)
 end
 
 return M
