@@ -53,16 +53,54 @@ function M.apply(colors, config, set_hl)
     on_surface_variant = colors.on_surface_variant,
 
     -- Brightened backgrounds for context differentiation
-    bg_bright = utils.brighten_hex(colors.background, 8),
-    bg_brighter = utils.brighten_hex(colors.background, 15),
+    bg_bright = utils.brighten_hex(colors.background, 12), -- Increased brightness
+    bg_brighter = utils.brighten_hex(colors.background, 20),
   }
 
   local highlights = {
-    -- === TREESITTER CONTEXT ===
+    -- === TREESITTER CONTEXT (Multiple possible group names) ===
     TreesitterContext = { bg = c.bg_bright },
     TreesitterContextLineNumber = { fg = c.primary, bg = c.bg_bright, style = STYLES.bold },
     TreesitterContextSeparator = { fg = c.outline_variant },
     TreesitterContextBottom = { sp = c.outline_variant, style = STYLES.underline },
+
+    -- Alternative names
+    ["@context"] = { bg = c.bg_bright },
+    ["@context.builtin"] = { bg = c.bg_bright },
+    TSContext = { bg = c.bg_bright },
+    TSContextLineNumber = { fg = c.primary, bg = c.bg_bright, style = STYLES.bold },
+
+    -- Nvim-treesitter-context (the actual plugin)
+    TreesitterContextLineNumberBottom = { fg = c.primary, bg = c.bg_bright },
+
+    -- === WORD HIGHLIGHTING / HOVER PLUGINS ===
+
+    -- LSP Document Highlight (when hovering over symbols)
+    LspReferenceText = { bg = c.bg_bright },
+    LspReferenceRead = { bg = c.bg_bright },
+    LspReferenceWrite = { bg = c.bg_brighter },
+
+    -- Illuminate plugin (word highlighting)
+    IlluminatedWord = { bg = c.bg_bright },
+    IlluminatedCurWord = { bg = c.bg_bright },
+    IlluminatedWordText = { bg = c.bg_bright },
+    IlluminatedWordRead = { bg = c.bg_bright },
+    IlluminatedWordWrite = { bg = c.bg_brighter },
+
+    -- vim-illuminate
+    illuminatedWord = { bg = c.bg_bright },
+    illuminatedCurWord = { bg = c.bg_bright },
+
+    -- Cursorword plugins
+    CursorWord = { bg = c.bg_bright },
+    CursorWord0 = { bg = c.bg_bright },
+    CursorWord1 = { bg = c.bg_bright },
+
+    -- Searchlight or similar plugins
+    SearchLight = { bg = c.bg_bright },
+
+    -- Generic word under cursor
+    WordUnderCursor = { bg = c.bg_bright },
 
     -- === MINI.NVIM PLUGINS ===
 
@@ -74,6 +112,10 @@ function M.apply(colors, config, set_hl)
     MiniClueNextKeyWithPostkeys = { fg = c.tertiary, bg = c.surface_high, style = STYLES.bold },
     MiniClueSeparator = { fg = c.outline_variant, bg = c.surface_high },
     MiniClueBackground = { bg = c.surface_high },
+
+    -- Mini.cursorword (this might be your word hover plugin)
+    MiniCursorword = { bg = c.bg_bright },
+    MiniCursorwordCurrent = { bg = c.bg_bright },
 
     -- Mini.picker
     MiniPickerBorder = { fg = c.outline_variant, bg = c.surface_high },
@@ -94,102 +136,24 @@ function M.apply(colors, config, set_hl)
     MiniStatuslineModeReplace = { fg = c.on_error_container, bg = c.error_container, style = STYLES.bold },
     MiniStatuslineModeVisual = { fg = c.on_tertiary, bg = c.tertiary, style = STYLES.bold },
 
-    -- Mini.files
-    MiniFilesFile = { fg = c.fg },
-    MiniFilesDirectory = { fg = c.primary, style = STYLES.bold },
-    MiniFilesBorder = { fg = c.outline_variant, bg = c.surface_high },
-    MiniFilesCursorLine = { bg = c.primary_container },
-    MiniFilesNormal = { fg = c.fg, bg = c.surface_high },
-    MiniFilesTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
-
-    -- Mini.completion
-    MiniCompletionActiveParameter = { style = STYLES.underline },
-
-    -- Mini.cursorword
-    MiniCursorword = { bg = c.bg_bright },
-    MiniCursorwordCurrent = { bg = c.bg_bright },
-
-    -- Mini.indentscope
-    MiniIndentscopeSymbol = { fg = c.outline_variant },
-    MiniIndentscopePrefix = { style = { "nocombine" } },
-
-    -- Mini.jump
-    MiniJump = { fg = c.on_primary, bg = c.primary, style = STYLES.bold },
-
-    -- Mini.map
-    MiniMapNormal = { fg = c.fg, bg = c.surface_high },
-    MiniMapSymbolCount = { fg = c.secondary },
-    MiniMapSymbolLine = { fg = c.primary },
-    MiniMapSymbolView = { fg = c.tertiary },
-
-    -- Mini.notify
-    MiniNotifyBorder = { fg = c.outline_variant, bg = c.surface_high },
-    MiniNotifyNormal = { fg = c.fg, bg = c.surface_high },
-    MiniNotifyTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
-
-    -- Mini.starter
-    MiniStarterCurrent = { style = { "nocombine" } },
-    MiniStarterFooter = { fg = c.on_surface_variant, style = STYLES.italic },
-    MiniStarterHeader = { fg = c.primary, style = STYLES.bold },
-    MiniStarterInactive = { fg = c.outline_variant },
-    MiniStarterItem = { fg = c.fg },
-    MiniStarterItemBullet = { fg = c.secondary },
-    MiniStarterItemPrefix = { fg = c.tertiary },
-    MiniStarterSection = { fg = c.primary, style = STYLES.bold },
-    MiniStarterQuery = { fg = c.secondary },
-
-    -- Mini.surround
-    MiniSurround = { fg = c.on_primary, bg = c.primary },
-
-    -- Mini.tabline
-    MiniTablineCurrent = { fg = c.on_primary_container, bg = c.primary_container, style = STYLES.bold },
-    MiniTablineFill = { bg = c.surface },
-    MiniTablineHidden = { fg = c.on_surface_variant, bg = c.surface },
-    MiniTablineModifiedCurrent = { fg = c.tertiary, bg = c.primary_container, style = STYLES.bold },
-    MiniTablineModifiedHidden = { fg = c.tertiary, bg = c.surface },
-    MiniTablineModifiedVisible = { fg = c.tertiary, bg = c.surface_high },
-    MiniTablineTabpagesection = { fg = c.on_secondary_container, bg = c.secondary_container },
-    MiniTablineVisible = { fg = c.fg, bg = c.surface_high },
-
-    -- Mini.test
-    MiniTestEmphasis = { style = STYLES.bold },
-    MiniTestFail = { fg = c.error, style = STYLES.bold },
-    MiniTestPass = { fg = c.primary, style = STYLES.bold },
-
-    -- Mini.trailspace
-    MiniTrailspace = { bg = c.error },
-
     -- === ENHANCED FLOATING WINDOWS ===
     FloatBorder = { fg = c.outline_variant, bg = c.surface_high },
     FloatTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
     FloatFooter = { fg = c.on_surface_variant, bg = c.surface_high },
 
-    -- === NVIM-NOTIFY (if using) ===
-    NotifyBackground = { bg = c.surface_high },
-    NotifyERRORBorder = { fg = c.error },
-    NotifyWARNBorder = { fg = c.tertiary },
-    NotifyINFOBorder = { fg = c.secondary },
-    NotifyDEBUGBorder = { fg = c.outline_variant },
-    NotifyTRACEBorder = { fg = c.outline_variant },
-    NotifyERRORIcon = { fg = c.error },
-    NotifyWARNIcon = { fg = c.tertiary },
-    NotifyINFOIcon = { fg = c.secondary },
-    NotifyDEBUGIcon = { fg = c.outline_variant },
-    NotifyTRACEIcon = { fg = c.outline_variant },
-    NotifyERRORTitle = { fg = c.error, style = STYLES.bold },
-    NotifyWARNTitle = { fg = c.tertiary, style = STYLES.bold },
-    NotifyINFOTitle = { fg = c.secondary, style = STYLES.bold },
-    NotifyDEBUGTitle = { fg = c.outline_variant, style = STYLES.bold },
-    NotifyTRACETitle = { fg = c.outline_variant, style = STYLES.bold },
+    -- === OTHER COMMON WORD/REFERENCE HIGHLIGHTING ===
+    -- Vim's built-in matchparen equivalent for words
+    MatchWord = { bg = c.bg_bright },
 
-    -- === WHICH-KEY (if using) ===
-    WhichKey = { fg = c.primary, style = STYLES.bold },
-    WhichKeyDesc = { fg = c.fg },
-    WhichKeyGroup = { fg = c.secondary, style = STYLES.bold },
-    WhichKeySeperator = { fg = c.outline_variant },
-    WhichKeyFloat = { bg = c.surface_high },
-    WhichKeyBorder = { fg = c.outline_variant, bg = c.surface_high },
-    WhichKeyValue = { fg = c.tertiary },
+    -- Some plugins use these
+    CurrentWord = { bg = c.bg_bright },
+    MatchedChar = { bg = c.bg_bright },
+    MatchedWord = { bg = c.bg_bright },
+
+    -- === DEBUGGING HIGHLIGHTS (to see what's being applied) ===
+    -- Uncomment these temporarily to see if they work:
+    -- DebugTest1 = { bg = "#FF0000" }, -- Bright red for testing
+    -- DebugTest2 = { bg = "#00FF00" }, -- Bright green for testing
   }
 
   -- Apply all highlights
