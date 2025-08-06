@@ -7,175 +7,186 @@ local STYLES = {
   bold_italic = { "bold", "italic" },
 }
 
---- Apply Lualine highlights with comprehensive mode and component support
+--- Apply Lualine highlights with Material You design principles
 --- @param colors table Color palette
 --- @param config table Plugin configuration
 --- @param set_hl function Highlight setter function
 function M.apply(colors, config, set_hl)
-  -- Semantic color mapping with fallbacks
+  -- Clean semantic color mapping
   local c = {
-    -- Primary theme colors
+    -- Primary system
     primary = colors.primary,
     primary_container = colors.primary_container,
+    on_primary = colors.on_primary,
     on_primary_container = colors.on_primary_container,
 
-    -- Secondary theme colors
+    -- Secondary system
     secondary = colors.secondary,
     secondary_container = colors.secondary_container,
+    on_secondary = colors.on_secondary,
     on_secondary_container = colors.on_secondary_container,
 
-    -- Tertiary theme colors
+    -- Tertiary system
     tertiary = colors.tertiary,
     tertiary_container = colors.tertiary_container,
+    on_tertiary = colors.on_tertiary,
     on_tertiary_container = colors.on_tertiary_container,
 
-    -- Error colors
+    -- Error system
     error = colors.error,
     error_container = colors.error_container,
     on_error_container = colors.on_error_container,
 
-    -- Surface colors
+    -- Surface system
     surface = colors.surface,
     on_surface = colors.on_surface,
-    surface_variant = colors.on_surface_variant,
+    on_surface_variant = colors.on_surface_variant,
+    surface_container = colors.surface_container,
+    surface_container_high = colors.surface_container_high,
+    surface_container_highest = colors.surface_container_highest,
 
-    -- Container surfaces with fallbacks
-    container_low = colors.surface_container_low or colors.surface,
-    container_high = colors.surface_container_high or colors.surface,
-    container_highest = colors.surface_container_highest or colors.surface,
-
-    -- Utility colors
+    -- Outline system
     outline = colors.outline,
-    tertiary_fixed = colors.tertiary_fixed or colors.tertiary,
+    outline_variant = colors.outline_variant,
   }
 
-  -- Mode definitions with their corresponding color schemes
-  local modes = {
-    { name = "normal", colors = { fg = c.primary, bg = c.primary_container } },
-    { name = "insert", colors = { fg = c.on_secondary_container, bg = c.secondary_container } },
-    { name = "visual", colors = { fg = c.on_tertiary_container, bg = c.tertiary_container } },
-    { name = "replace", colors = { fg = c.on_error_container, bg = c.error_container } },
-    { name = "command", colors = { fg = c.on_primary_container, bg = c.primary_container } },
-    { name = "terminal", colors = { fg = c.on_tertiary_container, bg = c.tertiary_container } },
-  }
-
-  -- Component sections with their styling
-  local sections = {
-    { name = "a", style = STYLES.bold },
-    { name = "b", style = nil },
-    { name = "c", style = nil },
-  }
-
-  -- Generate mode-based highlights
+  -- Core lualine highlights
   local highlights = {}
 
-  -- Generate highlights for each mode and section
-  for _, mode in ipairs(modes) do
-    local mode_name = mode.name
-    local mode_colors = mode.colors
-
-    for _, section in ipairs(sections) do
-      local section_name = section.name
-      local section_style = section.style
-
-      local group_name = "lualine_" .. section_name .. "_" .. mode_name
-
-      -- Define section-specific styling
-      if section_name == "a" then
-        highlights[group_name] = {
-          fg = mode_colors.fg,
-          bg = mode_colors.bg,
-          style = section_style,
-        }
-      elseif section_name == "b" then
-        highlights[group_name] = {
-          fg = mode_name == "normal" and c.on_primary_container or mode_colors.fg,
-          bg = c.container_high,
-        }
-      else -- section "c"
-        highlights[group_name] = {
-          fg = c.on_surface,
-          bg = c.container_low,
-        }
-      end
-    end
-  end
-
-  -- Inactive mode highlights
-  local inactive_sections = {
-    lualine_a_inactive = { fg = c.surface_variant, bg = c.container_highest },
-    lualine_b_inactive = { fg = c.surface_variant, bg = c.container_high },
-    lualine_c_inactive = { fg = c.outline, bg = c.container_low },
+  -- Mode-specific section A highlights (most prominent)
+  local mode_configs = {
+    normal = { fg = c.on_primary, bg = c.primary },
+    insert = { fg = c.on_secondary, bg = c.secondary },
+    visual = { fg = c.on_tertiary, bg = c.tertiary },
+    replace = { fg = c.on_error_container, bg = c.error_container },
+    command = { fg = c.on_primary_container, bg = c.primary_container },
+    terminal = { fg = c.on_tertiary_container, bg = c.tertiary_container },
   }
 
-  -- Diagnostic highlights
-  local diagnostics = {
-    { name = "error", color = c.error },
-    { name = "warn", color = c.primary },
-    { name = "info", color = c.tertiary },
-    { name = "hint", color = c.outline },
-  }
-
-  for _, diag in ipairs(diagnostics) do
-    highlights["lualine_diagnostics_" .. diag.name .. "_normal"] = {
-      fg = diag.color,
-      bg = c.container_high,
+  -- Generate section A highlights for each mode
+  for mode, colors_config in pairs(mode_configs) do
+    highlights["lualine_a_" .. mode] = {
+      fg = colors_config.fg,
+      bg = colors_config.bg,
+      style = STYLES.bold,
     }
   end
 
-  -- Diff highlights
-  local diff_highlights = {
-    lualine_diff_added_normal = { fg = c.tertiary_fixed, bg = c.container_high },
-    lualine_diff_modified_normal = { fg = c.primary, bg = c.container_high },
-    lualine_diff_removed_normal = { fg = c.error, bg = c.container_high },
+  -- Section B highlights (medium prominence)
+  for mode, _ in pairs(mode_configs) do
+    highlights["lualine_b_" .. mode] = {
+      fg = c.on_surface,
+      bg = c.surface_container_high,
+    }
+  end
+
+  -- Section C highlights (least prominence)
+  for mode, _ in pairs(mode_configs) do
+    highlights["lualine_c_" .. mode] = {
+      fg = c.on_surface_variant,
+      bg = c.surface_container,
+    }
+  end
+
+  -- Inactive window highlights
+  highlights.lualine_a_inactive = {
+    fg = c.outline,
+    bg = c.surface_container_highest,
+  }
+  highlights.lualine_b_inactive = {
+    fg = c.outline_variant,
+    bg = c.surface_container_high,
+  }
+  highlights.lualine_c_inactive = {
+    fg = c.outline_variant,
+    bg = c.surface_container,
+  }
+
+  -- Diagnostic highlights for lualine
+  local diagnostic_configs = {
+    error = c.error,
+    warn = c.tertiary,
+    info = c.secondary,
+    hint = c.outline,
+  }
+
+  for diagnostic, color in pairs(diagnostic_configs) do
+    highlights["lualine_diagnostics_" .. diagnostic .. "_normal"] = {
+      fg = color,
+      bg = c.surface_container_high,
+    }
+    highlights["lualine_diagnostics_" .. diagnostic .. "_inactive"] = {
+      fg = color,
+      bg = c.surface_container,
+    }
+  end
+
+  -- Git diff highlights
+  highlights.lualine_diff_added_normal = {
+    fg = c.primary,
+    bg = c.surface_container_high,
+  }
+  highlights.lualine_diff_modified_normal = {
+    fg = c.tertiary,
+    bg = c.surface_container_high,
+  }
+  highlights.lualine_diff_removed_normal = {
+    fg = c.error,
+    bg = c.surface_container_high,
+  }
+
+  -- Inactive diff highlights
+  highlights.lualine_diff_added_inactive = {
+    fg = c.outline,
+    bg = c.surface_container,
+  }
+  highlights.lualine_diff_modified_inactive = {
+    fg = c.outline,
+    bg = c.surface_container,
+  }
+  highlights.lualine_diff_removed_inactive = {
+    fg = c.outline,
+    bg = c.surface_container,
   }
 
   -- Component-specific highlights
-  local component_highlights = {
-    -- File information
-    lualine_filename_normal = { fg = c.on_surface, bg = c.container_low },
-    lualine_filename_inactive = { fg = c.outline, bg = c.container_low },
-
-    -- Location and progress
-    lualine_location_normal = { fg = c.primary, bg = c.primary_container, style = STYLES.bold },
-    lualine_progress_normal = { fg = c.primary, bg = c.primary_container },
-
-    -- File type and encoding
-    lualine_filetype_normal = { fg = c.on_surface, bg = c.container_high },
-    lualine_encoding_normal = { fg = c.surface_variant, bg = c.container_high },
-
-    -- Branch information
-    lualine_branch_normal = { fg = c.tertiary, bg = c.container_high, style = STYLES.bold },
-    lualine_branch_inactive = { fg = c.outline, bg = c.container_high },
+  highlights.lualine_filename_normal = {
+    fg = c.on_surface,
+    bg = c.surface_container,
+  }
+  highlights.lualine_filename_inactive = {
+    fg = c.outline_variant,
+    bg = c.surface_container,
   }
 
-  -- Additional mode variants for other sections
-  local additional_modes = {
-    "insert",
-    "visual",
-    "replace",
-    "command",
-    "terminal",
+  highlights.lualine_branch_normal = {
+    fg = c.primary,
+    bg = c.surface_container_high,
+    style = STYLES.bold,
+  }
+  highlights.lualine_branch_inactive = {
+    fg = c.outline,
+    bg = c.surface_container,
   }
 
-  for _, mode in ipairs(additional_modes) do
-    component_highlights["lualine_filename_" .. mode] = component_highlights.lualine_filename_normal
-    component_highlights["lualine_filetype_" .. mode] = component_highlights.lualine_filetype_normal
-    component_highlights["lualine_branch_" .. mode] = component_highlights.lualine_branch_normal
-  end
+  highlights.lualine_location_normal = {
+    fg = c.on_primary,
+    bg = c.primary,
+    style = STYLES.bold,
+  }
+  highlights.lualine_progress_normal = {
+    fg = c.on_primary_container,
+    bg = c.primary_container,
+  }
 
-  -- Merge all highlight groups
-  for group, opts in pairs(inactive_sections) do
-    highlights[group] = opts
-  end
-
-  for group, opts in pairs(diff_highlights) do
-    highlights[group] = opts
-  end
-
-  for group, opts in pairs(component_highlights) do
-    highlights[group] = opts
-  end
+  highlights.lualine_filetype_normal = {
+    fg = c.on_surface_variant,
+    bg = c.surface_container_high,
+  }
+  highlights.lualine_encoding_normal = {
+    fg = c.outline,
+    bg = c.surface_container_high,
+  }
 
   -- Apply all highlights
   for group, opts in pairs(highlights) do

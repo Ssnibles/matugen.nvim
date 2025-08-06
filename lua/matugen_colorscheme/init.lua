@@ -10,6 +10,7 @@ local default_config = {
     lualine = false,
     gitsigns = false,
     telescope = false,
+    miscellaneous = true,
   },
   ignore_groups = {},
   custom_highlights = {},
