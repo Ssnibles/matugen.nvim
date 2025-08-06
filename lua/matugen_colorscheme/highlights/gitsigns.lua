@@ -1,70 +1,96 @@
 local M = {}
 
--- Predefined style combinations
-local styles = {
+-- Style combinations for reuse
+local STYLES = {
   bold = { "bold" },
   italic = { "italic" },
   strikethrough = { "strikethrough" },
+  bold_italic = { "bold", "italic" },
 }
 
---- Applies GitSigns highlight groups
+--- Apply GitSigns highlights
 --- @param colors table Color palette
 --- @param config table Plugin configuration
 --- @param set_hl function Highlight setter function
 function M.apply(colors, config, set_hl)
-  -- Define semantic color aliases
-  local s = {
-    add = colors.tertiary_fixed,
-    change = colors.primary_fixed,
+  -- Semantic color mapping for git operations
+  local c = {
+    -- Primary git colors
+    add = colors.tertiary_fixed or colors.tertiary,
+    change = colors.primary_fixed or colors.primary,
     delete = colors.error,
-    add_dim = colors.tertiary_fixed_dim,
-    change_dim = colors.primary_fixed_dim,
+
+    -- Dimmed variants
+    add_dim = colors.tertiary_fixed_dim or colors.tertiary_container,
+    change_dim = colors.primary_fixed_dim or colors.primary_container,
     delete_dim = colors.error_container,
-    surface = colors.surface_container_high,
-    outline = colors.outline,
+
+    -- UI colors
+    surface = colors.surface_container_high or colors.surface,
+    outline = colors.outline_variant or colors.outline,
+
+    -- Container colors for previews
+    add_container = colors.tertiary_container,
+    change_container = colors.primary_container,
   }
 
-  -- GitSigns highlight definitions
-  local highlights = {
-    -- Core Sign Highlights
-    GitSignsAdd = { fg = s.add },
-    GitSignsChange = { fg = s.change },
-    GitSignsDelete = { fg = s.delete },
-
-    -- Number Column Highlights
-    GitSignsAddNr = { fg = s.add, style = styles.bold },
-    GitSignsChangeNr = { fg = s.change, style = styles.bold },
-    GitSignsDeleteNr = { fg = s.delete, style = styles.bold },
-
-    -- Line Highlights
-    GitSignsAddLn = { bg = s.surface },
-    GitSignsChangeLn = { bg = s.surface },
-    GitSignsDeleteLn = { bg = s.surface },
-
-    -- Current Line Blame
-    GitSignsCurrentLineBlame = { fg = s.outline, style = styles.italic },
-
-    -- Deleted Line Highlights
-    GitSignsDeleteRemoved = { fg = s.delete, style = styles.strikethrough },
-
-    -- Preview Highlights
-    GitSignsAddPreview = { fg = s.add, bg = colors.tertiary_container },
-    GitSignsChangePreview = { fg = s.change, bg = colors.primary_container },
-
-    -- Untracked Files
-    GitSignsUntracked = { fg = s.add, style = styles.italic },
-
-    -- Staged Changes
-    GitSignsStagedAdd = { fg = s.add, style = styles.bold },
-    GitSignsStagedChange = { fg = s.change, style = styles.bold },
-    GitSignsStagedDelete = { fg = s.delete, style = styles.bold },
-
-    -- Changedelete (Combination)
-    GitSignsChangedelete = { fg = s.change, bg = colors.primary_container },
-
-    -- Top of Screen Delete Indicator
-    GitSignsTopdelete = { fg = s.delete, bg = s.delete_dim, style = styles.bold },
+  -- Base git sign highlights
+  local base_signs = {
+    { name = "Add", color = c.add },
+    { name = "Change", color = c.change },
+    { name = "Delete", color = c.delete },
   }
+
+  local highlights = {}
+
+  -- Generate core sign highlights
+  for _, sign in ipairs(base_signs) do
+    local name, color = sign.name, sign.color
+
+    -- Basic signs
+    highlights["GitSigns" .. name] = { fg = color }
+
+    -- Number column signs (bold)
+    highlights["GitSigns" .. name .. "Nr"] = { fg = color, style = STYLES.bold }
+
+    -- Line highlights (subtle background)
+    highlights["GitSigns" .. name .. "Ln"] = { bg = c.surface }
+
+    -- Staged changes (bold)
+    highlights["GitSignsStaged" .. name] = { fg = color, style = STYLES.bold }
+  end
+
+  -- Special git highlights
+  local special_highlights = {
+    -- Current line blame
+    GitSignsCurrentLineBlame = { fg = c.outline, style = STYLES.italic },
+
+    -- Deleted content styling
+    GitSignsDeleteRemoved = { fg = c.delete, style = STYLES.strikethrough },
+
+    -- Preview highlights
+    GitSignsAddPreview = { fg = c.add, bg = c.add_container },
+    GitSignsChangePreview = { fg = c.change, bg = c.change_container },
+
+    -- Untracked files
+    GitSignsUntracked = { fg = c.add, style = STYLES.italic },
+
+    -- Combined change/delete
+    GitSignsChangedelete = { fg = c.change, bg = c.change_container },
+
+    -- Top delete indicator
+    GitSignsTopdelete = { fg = c.delete, bg = c.delete_dim, style = STYLES.bold },
+
+    -- Additional useful highlights
+    GitSignsAddInline = { fg = c.add, bg = c.add_dim },
+    GitSignsChangeInline = { fg = c.change, bg = c.change_dim },
+    GitSignsDeleteInline = { fg = c.delete, bg = c.delete_dim },
+  }
+
+  -- Merge special highlights
+  for group, opts in pairs(special_highlights) do
+    highlights[group] = opts
+  end
 
   -- Apply all highlights
   for group, opts in pairs(highlights) do
