@@ -1,116 +1,102 @@
 local M = {}
 
---- Applies blink.cmp specific highlight groups
---- @param colors table The table of colors parsed from Matugen.
---- @param config table The plugin's configuration table.
---- @param set_hl function Helper function to set highlight groups.
-function M.apply(colors, config, set_hl)
-  -- Define style presets
-  local styles = {
-    bold = { "bold" },
-    strikethrough = { "strikethrough" },
-    italic = { "italic" },
-  }
+-- Predefined style combinations
+local styles = {
+  bold = { "bold" },
+  strikethrough = { "strikethrough" },
+  italic = { "italic" },
+}
 
+--- Applies cmp highlight groups
+--- @param colors table Color palette
+--- @param config table Plugin configuration
+--- @param set_hl function Highlight setter function
+function M.apply(colors, config, set_hl)
   -- Semantic color aliases
   local C = {
-    text = colors.on_surface or "#DBE4E7",
-    muted = colors.outline or "#839498",
-    highlight = colors.primary or "#F5BD62",
-    secondary = colors.secondary or "#C6C2EA",
-    tertiary = colors.tertiary or "#8ED1DF",
-    accent = colors.primary_fixed or "#FFDDAE",
-    error = colors.error or "#FFB4AB",
-    success = colors.tertiary_fixed or "#AAEDFC",
-    border = colors.outline or "#839498",
+    text = colors.on_surface,
+    muted = colors.outline,
+    highlight = colors.primary,
+    secondary = colors.secondary,
+    tertiary = colors.tertiary,
+    accent = colors.primary_fixed,
+    error = colors.error,
+    success = colors.tertiary_fixed,
+    border = colors.outline,
   }
 
-  -- Core completion items
-  set_hl("BlinkCompletionWindow", { bg = colors.surface_container_highest or "#2D3638" })
-  set_hl("BlinkCompletionItemNormal", { fg = C.text })
-  set_hl("BlinkCompletionItemKind", { fg = C.muted })
-  set_hl("BlinkCompletionItemMenu", { fg = colors.outline_variant or "#3A494D" })
+  -- Highlight definitions
+  local highlights = {
+    -- Core completion items
+    BlinkCompletionWindow = { bg = colors.surface_container_highest },
+    BlinkCompletionItemNormal = { fg = C.text },
+    BlinkCompletionItemKind = { fg = C.muted },
+    BlinkCompletionItemMenu = { fg = colors.outline_variant },
 
-  -- Matching and selection
-  set_hl("BlinkCompletionItemMatch", {
-    fg = C.highlight,
-    style = styles.bold,
-  })
+    -- Matching and selection
+    BlinkCompletionItemMatch = { fg = C.highlight, style = styles.bold },
+    BlinkCompletionItemMatchFuzzy = { fg = colors.primary_fixed_dim, style = styles.bold },
+    BlinkCompletionItemDeprecated = { fg = colors.outline_variant, style = styles.strikethrough },
+    BlinkCompletionItemSelected = {
+      fg = colors.on_primary_container,
+      bg = colors.primary_container,
+      style = styles.bold,
+    },
 
-  set_hl("BlinkCompletionItemMatchFuzzy", {
-    fg = colors.primary_fixed_dim or "#F5BD62",
-    style = styles.bold,
-  })
+    -- Documentation window
+    BlinkCompletionDocumentation = { bg = colors.surface_container_high },
+    BlinkCompletionDocumentationBorder = { fg = C.border },
 
-  set_hl("BlinkCompletionItemDeprecated", {
-    fg = colors.outline_variant or "#3A494D",
-    style = styles.strikethrough,
-  })
+    -- Item kinds
+    BlinkCompletionItemKindVariable = { fg = C.highlight },
+    BlinkCompletionItemKindFunction = { fg = C.secondary },
+    BlinkCompletionItemKindMethod = { fg = C.secondary },
+    BlinkCompletionItemKindField = { fg = C.accent },
+    BlinkCompletionItemKindEnum = { fg = C.tertiary },
+    BlinkCompletionItemKindKeyword = { fg = C.highlight },
+    BlinkCompletionItemKindText = { fg = C.text },
+    BlinkCompletionItemKindClass = { fg = colors.tertiary_fixed },
+    BlinkCompletionItemKindModule = { fg = C.tertiary },
+    BlinkCompletionItemKindInterface = { fg = colors.tertiary_fixed_dim },
+    BlinkCompletionItemKindStruct = { fg = C.tertiary },
+    BlinkCompletionItemKindConstant = { fg = colors.primary_fixed_dim },
+    BlinkCompletionItemKindNumber = { fg = C.accent },
+    BlinkCompletionItemKindBoolean = { fg = C.highlight },
+    BlinkCompletionItemKindString = { fg = C.success },
+    BlinkCompletionItemKindSnippet = { fg = colors.secondary_fixed },
+    BlinkCompletionItemKindColor = { fg = colors.outline_variant },
+    BlinkCompletionItemKindFile = { fg = C.secondary },
+    BlinkCompletionItemKindFolder = { fg = C.secondary },
+    BlinkCompletionItemKindProperty = { fg = C.accent },
+    BlinkCompletionItemKindUnit = { fg = colors.tertiary_fixed },
+    BlinkCompletionItemKindValue = { fg = C.accent },
+    BlinkCompletionItemKindEvent = { fg = colors.secondary_fixed },
+    BlinkCompletionItemKindOperator = { fg = C.tertiary },
+    BlinkCompletionItemKindTypeParameter = { fg = C.tertiary },
 
-  set_hl("BlinkCompletionItemSelected", {
-    fg = colors.on_primary_container or "#FFDDAE",
-    bg = colors.primary_container or "#604100",
-    style = styles.bold,
-  })
+    -- Status indicators
+    BlinkCompletionStatusNormal = { fg = C.muted },
+    BlinkCompletionStatusSelected = { fg = colors.on_primary_container },
+    BlinkCompletionStatusError = { fg = C.error },
 
-  -- Documentation window
-  set_hl("BlinkCompletionDocumentation", {
-    bg = colors.surface_container_high or "#232B2D",
-  })
+    -- Ghost text
+    BlinkCompletionGhostText = { fg = colors.on_surface_variant, style = styles.italic },
 
-  set_hl("BlinkCompletionDocumentationBorder", {
-    fg = C.border,
-  })
+    -- Borders
+    BlinkCompletionBorder = { fg = C.border },
 
-  -- Item kinds
-  set_hl("BlinkCompletionItemKindVariable", { fg = C.highlight })
-  set_hl("BlinkCompletionItemKindFunction", { fg = C.secondary })
-  set_hl("BlinkCompletionItemKindMethod", { fg = C.secondary })
-  set_hl("BlinkCompletionItemKindField", { fg = C.accent })
-  set_hl("BlinkCompletionItemKindEnum", { fg = C.tertiary })
-  set_hl("BlinkCompletionItemKindKeyword", { fg = C.highlight })
-  set_hl("BlinkCompletionItemKindText", { fg = C.text })
-  set_hl("BlinkCompletionItemKindClass", { fg = colors.tertiary_fixed or "#AAEDFC" })
-  set_hl("BlinkCompletionItemKindModule", { fg = C.tertiary })
-  set_hl("BlinkCompletionItemKindInterface", { fg = colors.tertiary_fixed_dim or "#8ED1DF" })
-  set_hl("BlinkCompletionItemKindStruct", { fg = C.tertiary })
-  set_hl("BlinkCompletionItemKindConstant", { fg = colors.primary_fixed_dim or "#F5BD62" })
-  set_hl("BlinkCompletionItemKindNumber", { fg = C.accent })
-  set_hl("BlinkCompletionItemKindBoolean", { fg = C.highlight })
-  set_hl("BlinkCompletionItemKindString", { fg = C.success })
-  set_hl("BlinkCompletionItemKindSnippet", { fg = colors.secondary_fixed or "#E3DFFF" })
-  set_hl("BlinkCompletionItemKindColor", { fg = colors.outline_variant or "#3A494D" })
-  set_hl("BlinkCompletionItemKindFile", { fg = C.secondary })
-  set_hl("BlinkCompletionItemKindFolder", { fg = C.secondary })
+    -- Search highlights
+    BlinkCompletionSearchMatch = {
+      fg = C.highlight,
+      bg = colors.primary_container,
+      style = styles.bold,
+    },
+  }
 
-  -- Additional blink.cmp items
-  set_hl("BlinkCompletionItemKindProperty", { fg = C.accent })
-  set_hl("BlinkCompletionItemKindUnit", { fg = colors.tertiary_fixed or "#AAEDFC" })
-  set_hl("BlinkCompletionItemKindValue", { fg = C.accent })
-  set_hl("BlinkCompletionItemKindEvent", { fg = colors.secondary_fixed or "#E3DFFF" })
-  set_hl("BlinkCompletionItemKindOperator", { fg = C.tertiary })
-  set_hl("BlinkCompletionItemKindTypeParameter", { fg = C.tertiary })
-
-  -- Status indicators
-  set_hl("BlinkCompletionStatusNormal", { fg = C.muted })
-  set_hl("BlinkCompletionStatusSelected", { fg = colors.on_primary_container or "#FFDDAE" })
-  set_hl("BlinkCompletionStatusError", { fg = C.error })
-
-  -- Ghost text
-  set_hl("BlinkCompletionGhostText", {
-    fg = colors.on_surface_variant or "#B8C9CE",
-    style = styles.italic,
-  })
-
-  -- Borders
-  set_hl("BlinkCompletionBorder", { fg = C.border })
-
-  -- Search highlights
-  set_hl("BlinkCompletionSearchMatch", {
-    fg = C.highlight,
-    bg = colors.primary_container or "#604100",
-    style = styles.bold,
-  })
+  -- Apply all highlights
+  for group, opts in pairs(highlights) do
+    set_hl(group, opts)
+  end
 end
 
 return M

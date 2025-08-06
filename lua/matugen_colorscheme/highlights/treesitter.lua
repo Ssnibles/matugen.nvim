@@ -1,76 +1,56 @@
 local M = {}
 
---- Applies Neovim Treesitter highlights with enhanced harmony and contrast
---- @param colors table The color palette
+-- Predefined style combinations
+local styles = {
+  bold = { "bold" },
+  italic = { "italic" },
+  underline = { "underline" },
+  bold_italic = { "bold", "italic" },
+  underline_italic = { "underline", "italic" },
+  none = {},
+}
+
+--- Applies Treesitter highlight groups
+--- @param colors table Color palette
 --- @param config table Plugin configuration
---- @param set_hl function Highlight setting helper
+--- @param set_hl function Highlight setter function
 function M.apply(colors, config, set_hl)
+  -- Semantic color aliases
   local C = {
-    -- Core text elements (enhanced contrast)
     fg = colors.on_background,
     muted = colors.on_surface_variant,
     comment = colors.outline,
-
-    -- Semantic tokens (higher contrast)
     keyword = colors.primary,
     type = colors.tertiary,
     func = colors.secondary,
-    builtin = colors.on_secondary_container, -- Improved visibility
-    constant = colors.on_primary_container, -- Better contrast
-
-    -- Literals (more distinct)
-    string = colors.tertiary_fixed_dim, -- Higher contrast
-    number = colors.primary, -- Brighter than before
+    builtin = colors.on_secondary_container,
+    constant = colors.on_primary_container,
+    string = colors.tertiary_fixed_dim,
+    number = colors.primary,
     bool = colors.primary,
     escape = colors.secondary,
-
-    -- Special elements
     tag = colors.primary,
-    attribute = colors.tertiary_fixed_dim, -- More distinct from tags
-    regex = colors.primary, -- Higher contrast
+    attribute = colors.tertiary_fixed_dim,
+    regex = colors.primary,
     annotation = colors.on_primary_container,
     annotation_bg = colors.primary_container,
-
-    -- Markup/documentation
     heading = colors.primary,
     link = colors.secondary,
     quote = colors.outline,
     code_bg = colors.surface_container_high,
-
-    -- Diagnostics (better contrast ratios)
     error = colors.error,
-    warn = colors.primary, -- More visible
-    info = colors.tertiary, -- Brighter
-    hint = colors.on_surface_variant, -- Better visibility
+    warn = colors.primary,
+    info = colors.tertiary,
+    hint = colors.on_surface_variant,
     error_bg = colors.error_container,
-    warn_bg = colors.surface_container_high, -- Improved contrast
+    warn_bg = colors.surface_container_high,
     info_bg = colors.tertiary_container,
     hint_bg = colors.surface_container,
-
-    -- Additional colors
-    secondary_container = colors.secondary_container,
-    tertiary_fixed_dim = colors.tertiary_fixed_dim,
-    inverse_surface = colors.inverse_surface,
-    surface_container_highest = colors.surface_container_highest,
   }
 
-  local styles = {
-    bold = { "bold" },
-    italic = { "italic" },
-    underline = { "underline" },
-    bold_italic = { "bold", "italic" },
-    underline_italic = { "underline", "italic" },
-    none = {},
-  }
-
-  local function apply_highlights(highlights)
-    for group, opts in pairs(highlights) do
-      set_hl(group, opts)
-    end
-  end
-
+  -- Highlight definitions
   local highlights = {
-    -- Core Syntax - Enhanced contrast
+    -- Core Syntax
     ["@comment"] = { fg = C.comment, style = styles.italic },
     ["@keyword"] = { fg = C.keyword, style = styles.bold },
     ["@keyword.return"] = { fg = C.keyword, style = styles.bold_italic },
@@ -80,27 +60,27 @@ function M.apply(colors, config, set_hl)
     ["@punctuation.bracket"] = { fg = C.muted },
     ["@punctuation.special"] = { fg = C.type, style = styles.bold },
 
-    -- Functions - Clearer distinction
+    -- Functions
     ["@function"] = { fg = C.func, style = styles.bold },
-    ["@function.call"] = { fg = C.func, style = styles.none },
+    ["@function.call"] = { fg = C.func },
     ["@function.builtin"] = { fg = C.builtin, style = styles.bold_italic },
     ["@method"] = { fg = C.func, style = styles.bold },
     ["@constructor"] = { fg = C.type, style = styles.bold },
     ["@parameter"] = { fg = C.muted, style = styles.italic },
 
-    -- Types - Improved separation from builtins
+    -- Types
     ["@type"] = { fg = C.type, style = styles.bold },
     ["@type.builtin"] = { fg = C.builtin, style = styles.bold },
     ["@namespace"] = { fg = C.keyword, style = styles.bold },
     ["@class"] = { fg = C.type, style = styles.bold },
 
-    -- Variables - Consistent styling
+    -- Variables
     ["@variable"] = { fg = C.fg },
     ["@variable.builtin"] = { fg = C.constant, style = styles.italic },
     ["@property"] = { fg = C.attribute },
     ["@field"] = { fg = C.attribute },
 
-    -- Literals - Harmonized with better differentiation
+    -- Literals
     ["@string"] = { fg = C.string },
     ["@string.escape"] = { fg = C.escape, style = styles.bold },
     ["@string.regex"] = { fg = C.regex, style = styles.bold },
@@ -109,7 +89,7 @@ function M.apply(colors, config, set_hl)
     ["@constant"] = { fg = C.constant, style = styles.bold },
     ["@constant.builtin"] = { fg = C.constant, style = styles.bold_italic },
 
-    -- Markdown - Enhanced header contrast
+    -- Markdown
     ["@text.title"] = { fg = C.heading, style = styles.bold },
     ["@text.literal"] = { fg = C.fg, bg = C.code_bg },
     ["@text.uri"] = { fg = C.link, style = styles.underline },
@@ -120,28 +100,31 @@ function M.apply(colors, config, set_hl)
     ["@text.warning"] = { fg = C.warn, bg = C.warn_bg },
     ["@text.danger"] = { fg = C.error, bg = C.error_bg },
 
-    -- HTML/XML - Higher tag/attribute contrast
+    -- HTML/XML
     ["@tag"] = { fg = C.tag, style = styles.bold },
-    ["@tag.attribute"] = { fg = C.attribute }, -- Now teal instead of gold
+    ["@tag.attribute"] = { fg = C.attribute },
     ["@tag.delimiter"] = { fg = C.comment },
 
     -- Special Elements
     ["@attribute"] = { fg = C.annotation, bg = C.annotation_bg, style = styles.bold },
     ["@exception"] = { fg = C.error, style = styles.bold },
 
-    -- Diagnostics - Better visibility
+    -- Diagnostics
     ["DiagnosticError"] = { fg = C.error, bg = C.error_bg, style = styles.bold },
     ["DiagnosticWarn"] = { fg = C.warn, bg = C.warn_bg, style = styles.bold },
     ["DiagnosticInfo"] = { fg = C.info, bg = C.info_bg },
     ["DiagnosticHint"] = { fg = C.hint, bg = C.hint_bg },
     ["DiagnosticUnderlineError"] = { sp = C.error, style = styles.underline },
 
-    -- Diff - Clearer differentiation
-    ["@diff.plus"] = { fg = C.tertiary_fixed_dim },
+    -- Diff
+    ["@diff.plus"] = { fg = colors.tertiary_fixed_dim },
     ["@diff.minus"] = { fg = colors.error },
   }
 
-  apply_highlights(highlights)
+  -- Apply all highlights
+  for group, opts in pairs(highlights) do
+    set_hl(group, opts)
+  end
 
   -- Semantic links
   local links = {
