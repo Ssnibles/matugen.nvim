@@ -73,38 +73,9 @@ function M.apply(colors, config, set_hl)
     -- Nvim-treesitter-context (the actual plugin)
     TreesitterContextLineNumberBottom = { fg = c.primary, bg = c.bg_bright },
 
-    -- === WORD HIGHLIGHTING / HOVER PLUGINS ===
-
-    -- LSP Document Highlight (when hovering over symbols)
-    LspReferenceText = { bg = c.bg_bright },
-    LspReferenceRead = { bg = c.bg_bright },
-    LspReferenceWrite = { bg = c.bg_brighter },
-
-    -- Illuminate plugin (word highlighting)
-    IlluminatedWord = { bg = c.bg_bright },
-    IlluminatedCurWord = { bg = c.bg_bright },
-    IlluminatedWordText = { bg = c.bg_bright },
-    IlluminatedWordRead = { bg = c.bg_bright },
-    IlluminatedWordWrite = { bg = c.bg_brighter },
-
-    -- vim-illuminate
-    illuminatedWord = { bg = c.bg_bright },
-    illuminatedCurWord = { bg = c.bg_bright },
-
-    -- Cursorword plugins
-    CursorWord = { bg = c.bg_bright },
-    CursorWord0 = { bg = c.bg_bright },
-    CursorWord1 = { bg = c.bg_bright },
-
-    -- Searchlight or similar plugins
-    SearchLight = { bg = c.bg_bright },
-
-    -- Generic word under cursor
-    WordUnderCursor = { bg = c.bg_bright },
-
     -- === MINI.NVIM PLUGINS ===
 
-    -- Mini.keyclue (unified styling)
+    -- Mini.keyclue
     MiniClueTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
     MiniClueDescGroup = { fg = c.secondary, bg = c.surface_high },
     MiniClueDescSingle = { fg = c.fg, bg = c.surface_high },
@@ -112,29 +83,6 @@ function M.apply(colors, config, set_hl)
     MiniClueNextKeyWithPostkeys = { fg = c.tertiary, bg = c.surface_high, style = STYLES.bold },
     MiniClueSeparator = { fg = c.outline_variant, bg = c.surface_high },
     MiniClueBackground = { bg = c.surface_high },
-
-    -- Mini.cursorword (this might be your word hover plugin)
-    MiniCursorword = { bg = c.bg_bright },
-    MiniCursorwordCurrent = { bg = c.bg_bright },
-
-    -- Mini.picker
-    MiniPickerBorder = { fg = c.outline_variant, bg = c.surface_high },
-    MiniPickerPrompt = { fg = c.fg, bg = c.surface_high },
-    MiniPickerMatchCurrent = { fg = c.on_primary_container, bg = c.primary_container },
-    MiniPickerMatchMarked = { fg = c.on_secondary_container, bg = c.secondary_container },
-    MiniPickerHeader = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
-
-    -- Mini.statusline
-    MiniStatuslineDevinfo = { fg = c.fg, bg = c.surface_high },
-    MiniStatuslineFileinfo = { fg = c.fg, bg = c.surface_high },
-    MiniStatuslineFilename = { fg = c.fg, bg = c.surface_high },
-    MiniStatuslineInactive = { fg = c.on_surface_variant, bg = c.surface },
-    MiniStatuslineModeCommand = { fg = c.on_primary, bg = c.primary, style = STYLES.bold },
-    MiniStatuslineModeInsert = { fg = c.on_secondary, bg = c.secondary, style = STYLES.bold },
-    MiniStatuslineModeNormal = { fg = c.on_primary_container, bg = c.primary_container, style = STYLES.bold },
-    MiniStatuslineModeOther = { fg = c.on_tertiary_container, bg = c.tertiary_container, style = STYLES.bold },
-    MiniStatuslineModeReplace = { fg = c.on_error_container, bg = c.error_container, style = STYLES.bold },
-    MiniStatuslineModeVisual = { fg = c.on_tertiary, bg = c.tertiary, style = STYLES.bold },
 
     -- === ENHANCED FLOATING WINDOWS ===
     FloatBorder = { fg = c.outline_variant, bg = c.surface_high },
