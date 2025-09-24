@@ -1,8 +1,14 @@
+-- ~/projects/matugen.nvim/lua/matugen_colorscheme/init.lua
+-- Lean core with robust JSONC support, safe apply, optional fs watch, and clear APIs.
+
 local M = {}
 
--- Default configuration
-local default_config = {
-  file = vim.fn.stdpath("cache") .. "/matugen/colors.jsonc",
+local uv = vim.uv or vim.loop -- libuv bindings exposed by Neovim [>=0.8], documented as vim.uv [web:20]
+local api, fn, opt = vim.api, vim.fn, vim.opt
+
+-- Defaults
+local DEFAULT = {
+  file = fn.stdpath("cache") .. "/matugen/colors.jsonc",
   plugins = {
     base = true,
     treesitter = true,
@@ -11,359 +17,437 @@ local default_config = {
     miscellaneous = true,
   },
   ignore_groups = {},
-  custom_highlights = {},
-  debug = false, -- Enable for troubleshooting
+  custom_highlights = nil, -- function(colors, cfg, set_hl) | table {Group=Spec}
+  debug = false,
+  auto_apply = true,
+  watch = false, -- poll the file for changes (portable via libuv fs_poll)
+  watch_interval_ms = 500, -- fs poll interval; clamped to sane minimum
+  background = nil, -- "dark" | "light" | nil (no change)
 }
 
-local config = {}
-local colors_cache = nil
+-- State
+local cfg = vim.deepcopy(DEFAULT)
+local colors_cache, colors_mtime = nil, nil
+local commands_created = false
+local poll_handle = nil
+local modules_cache = {} -- cache successfully required highlight modules
 
--- Style mappings for cleaner code
-local STYLES = {
-  bold = "bold",
-  italic = "italic",
-  underline = "underline",
-  undercurl = "undercurl",
-  reverse = "reverse",
-  strikethrough = "strikethrough",
-}
-
---- Debug logging function
---- @param message string
---- @param level? number
-local function debug_log(message, level)
-  if not config.debug then
+-- Debug logger
+local function log(msg, level)
+  if not cfg.debug then
     return
   end
-  level = level or vim.log.levels.INFO
-  vim.notify("Matugen Debug: " .. message, level)
+  vim.notify("[matugen] " .. tostring(msg), level or vim.log.levels.INFO) -- idiomatic notify [web:14]
 end
 
---- Enhanced highlight setter with better error handling
---- @param group string
---- @param opts table
-local function set_hl(group, opts)
-  if not group or type(group) ~= "string" then
-    debug_log("Invalid group name: " .. tostring(group), vim.log.levels.WARN)
-    return
-  end
+-- Robust JSONC stripper: removes // and /* */ outside of strings; preserves escapes.
+-- This avoids breaking JSON content that contains comment-like sequences in string literals.
+local function strip_jsonc(s)
+  local out = {}
+  local i, len = 1, #s
+  local in_str, esc = false, false
+  local in_line, in_block = false, false
+  while i <= len do
+    local c = s:sub(i, i)
+    local n = s:sub(i + 1, i + 1)
 
-  if not opts or type(opts) ~= "table" then
-    debug_log("Invalid opts for group " .. group, vim.log.levels.WARN)
-    return
-  end
-
-  -- Handle links
-  if opts.link then
-    local ok, err = pcall(vim.api.nvim_set_hl, 0, group, { link = opts.link })
-    if not ok then
-      debug_log("Failed to link " .. group .. " to " .. opts.link .. ": " .. err, vim.log.levels.ERROR)
-    end
-    return
-  end
-
-  local hl = {}
-
-  -- Set color fields
-  for _, field in ipairs({ "fg", "bg", "sp", "ctermfg", "ctermbg" }) do
-    if opts[field] then
-      hl[field] = opts[field]
-    end
-  end
-
-  -- Handle styles
-  if opts.style then
-    local styles = type(opts.style) == "table" and opts.style or { opts.style }
-    for _, style in ipairs(styles) do
-      if STYLES[style] then
-        hl[STYLES[style]] = true
+    if in_line then
+      if c == "\n" then
+        in_line = false
+        table.insert(out, c)
+      end
+      i = i + 1
+    elseif in_block then
+      if c == "*" and n == "/" then
+        in_block = false
+        i = i + 2
       else
-        debug_log("Unknown style: " .. tostring(style), vim.log.levels.WARN)
+        i = i + 1
+      end
+    elseif in_str then
+      table.insert(out, c)
+      if esc then
+        esc = false
+      elseif c == "\\" then
+        esc = true
+      elseif c == '"' then
+        in_str = false
+      end
+      i = i + 1
+    else
+      if c == '"' then
+        in_str = true
+        table.insert(out, c)
+        i = i + 1
+      elseif c == "/" and n == "/" then
+        in_line = true
+        i = i + 2
+      elseif c == "/" and n == "*" then
+        in_block = true
+        i = i + 2
+      else
+        table.insert(out, c)
+        i = i + 1
       end
     end
   end
-
-  -- Apply highlight with error handling
-  local ok, err = pcall(vim.api.nvim_set_hl, 0, group, hl)
-  if not ok then
-    debug_log("Failed to set highlight " .. group .. ": " .. err, vim.log.levels.ERROR)
-  end
+  return table.concat(out)
 end
 
---- Load and cache color data with comprehensive error handling
---- @return table|nil
-local function load_colors()
-  if colors_cache then
-    debug_log("Using cached colors")
+-- Read full file (fast path: libuv)
+local function read_all(path)
+  if uv and uv.fs_open then
+    local fd, err = uv.fs_open(path, "r", 438)
+    if not fd then
+      return nil, err
+    end
+    local stat, serr = uv.fs_fstat(fd)
+    if not stat then
+      uv.fs_close(fd)
+      return nil, serr
+    end
+    local data, rerr = uv.fs_read(fd, stat.size, 0)
+    uv.fs_close(fd)
+    if not data then
+      return nil, rerr
+    end
+    return data
+  end
+  local f = io.open(path, "rb")
+  if not f then
+    return nil, "open failed"
+  end
+  local data = f:read("*a")
+  f:close()
+  return data
+end
+
+-- File mtime in seconds (libuv fs_stat), may be table {sec,nsec} or number.
+local function file_mtime(path)
+  if not (uv and uv.fs_stat) then
+    return nil
+  end
+  local st = uv.fs_stat(path)
+  if not st then
+    return nil
+  end
+  local mt = st.mtime
+  if type(mt) == "table" and mt.sec then
+    return mt.sec
+  end
+  if type(mt) == "number" then
+    return mt
+  end
+  return nil
+end
+
+-- JSONC -> Lua table using Neovim's built-in JSON decoder.
+local function decode_jsonc(data)
+  local ok, decoded = pcall(vim.json.decode, strip_jsonc(data)) -- JSON decoder is vim.json.decode [web:28]
+  if not ok or type(decoded) ~= "table" then
+    return nil, decoded
+  end
+  return decoded, nil
+end
+
+-- Load colors with mtime cache; only clear/apply when a valid palette is present.
+local function load_colors(force)
+  local path = cfg.file
+  local mtime = file_mtime(path)
+  if not force and colors_cache and colors_mtime and mtime and mtime == colors_mtime then
+    log("colors.jsonc unchanged; using cache")
     return colors_cache
   end
-
-  local file_path = vim.fn.expand(config.file)
-  debug_log("Loading colors from: " .. file_path)
-
-  -- Check if file exists
-  if vim.fn.filereadable(file_path) ~= 1 then
-    vim.notify("Matugen: Color file not found: " .. file_path, vim.log.levels.ERROR)
-    debug_log("File does not exist or is not readable")
+  local data, err = read_all(path)
+  if not data or data == "" then
+    vim.notify("Matugen: cannot read color file: " .. path, vim.log.levels.ERROR)
+    log("read error: " .. tostring(err), vim.log.levels.ERROR)
     return nil
   end
-
-  local file = io.open(file_path, "r")
-  if not file then
-    vim.notify("Matugen: Cannot open color file: " .. file_path, vim.log.levels.ERROR)
+  local decoded, derr = decode_jsonc(data)
+  if not decoded then
+    vim.notify("Matugen: invalid JSON/JSONC in color file: " .. path, vim.log.levels.ERROR)
+    log("json decode failed: " .. tostring(derr), vim.log.levels.ERROR)
     return nil
   end
-
-  local content = file:read("*a")
-  file:close()
-
-  if not content or content == "" then
-    vim.notify("Matugen: Color file is empty", vim.log.levels.ERROR)
-    return nil
-  end
-
-  debug_log("File content length: " .. #content)
-
-  -- Remove JSONC comments
-  content = content:gsub("//[^\n]*", "")
-
-  local ok, data = pcall(vim.json.decode, content)
-  if not ok then
-    vim.notify("Matugen: Invalid JSON in color file: " .. tostring(data), vim.log.levels.ERROR)
-    debug_log("JSON decode error: " .. tostring(data))
-    return nil
-  end
-
-  if not data or type(data) ~= "table" then
-    vim.notify("Matugen: Invalid color data format", vim.log.levels.ERROR)
-    return nil
-  end
-
-  -- Validate essential colors
-  local essential_colors = { "background", "on_surface", "primary" }
-  for _, color in ipairs(essential_colors) do
-    if not data[color] then
-      vim.notify("Matugen: Missing essential color: " .. color, vim.log.levels.WARN)
-    end
-  end
-
-  colors_cache = data
-  debug_log("Colors loaded successfully, found " .. vim.tbl_count(data) .. " colors")
+  colors_cache = decoded
+  colors_mtime = mtime or os.time()
   return colors_cache
 end
 
---- Apply highlight module safely with better error reporting
---- @param name string
---- @param colors table
-local function apply_module(name, colors)
-  if not config.plugins[name] then
-    debug_log("Module " .. name .. " is disabled")
+-- Normalize highlight spec for nvim_set_hl; empty table clears a group; link passes through a link-only change.
+local valid_style = {
+  bold = true,
+  italic = true,
+  underline = true,
+  undercurl = true,
+  reverse = true,
+  strikethrough = true,
+  nocombine = true,
+}
+
+local function normalize_spec(spec)
+  if spec.link then
+    return { link = spec.link } -- link is a special case in nvim_set_hl [web:14]
+  end
+  local out = {}
+  if spec.fg then
+    out.fg = spec.fg
+  end
+  if spec.bg then
+    out.bg = spec.bg
+  end
+  if spec.sp then
+    out.sp = spec.sp
+  end
+  if spec.ctermfg then
+    out.ctermfg = spec.ctermfg
+  end
+  if spec.ctermbg then
+    out.ctermbg = spec.ctermbg
+  end
+  if spec.blend then
+    out.blend = spec.blend
+  end
+  local style = spec.style
+  if type(style) == "string" then
+    style = { style }
+  end
+  if type(style) == "table" then
+    for _, s in ipairs(style) do
+      if valid_style[s] then
+        out[s] = true
+      end
+    end
+  end
+  return out
+end
+
+local function set_hl(group, spec)
+  if type(group) ~= "string" or type(spec) ~= "table" then
     return
   end
-
-  debug_log("Loading module: " .. name)
-
-  local module_path = "matugen_colorscheme.highlights." .. name
-  local ok, module = pcall(require, module_path)
-
+  local ok, err = pcall(api.nvim_set_hl, 0, group, normalize_spec(spec)) -- global namespace 0 is standard for colorschemes [web:14]
   if not ok then
-    vim.notify("Matugen: Failed to load module " .. name .. ": " .. module, vim.log.levels.ERROR)
-    debug_log("Module load error: " .. module)
-    return
-  end
-
-  if type(module.apply) ~= "function" then
-    vim.notify("Matugen: Module " .. name .. " has no apply function", vim.log.levels.ERROR)
-    return
-  end
-
-  debug_log("Applying module: " .. name)
-  local apply_ok, apply_err = pcall(module.apply, colors, config, set_hl)
-
-  if not apply_ok then
-    vim.notify("Matugen: Error applying module " .. name .. ": " .. apply_err, vim.log.levels.ERROR)
-    debug_log("Module apply error: " .. apply_err)
-  else
-    debug_log("Module " .. name .. " applied successfully")
+    log("set_hl failed for " .. group .. ": " .. tostring(err), vim.log.levels.WARN)
   end
 end
 
---- Main colorscheme application function
-function M.apply()
-  debug_log("Starting colorscheme application")
-
-  -- Reset highlights
-  vim.cmd("highlight clear")
-  if vim.fn.exists("syntax_on") then
-    vim.cmd("syntax reset")
+local function set_many(tbl)
+  for group, spec in pairs(tbl or {}) do
+    set_hl(group, spec)
   end
+end
 
-  -- Set colorscheme name
-  vim.g.colors_name = "matugen"
-  vim.opt.termguicolors = true
-  debug_log("Cleared existing highlights and set termguicolors")
+-- Apply highlight submodule (cached require)
+local function apply_module(name, colors)
+  if not cfg.plugins[name] then
+    return
+  end
+  local mod = modules_cache[name]
+  if mod == nil then
+    local ok_req, loaded = pcall(require, "matugen_colorscheme.highlights." .. name)
+    if ok_req and type(loaded) == "table" and type(loaded.apply) == "function" then
+      modules_cache[name] = loaded
+      mod = loaded
+    else
+      modules_cache[name] = false
+      log("skip module " .. name .. " (missing apply)", vim.log.levels.WARN)
+      return
+    end
+  elseif mod == false then
+    return
+  end
+  local ok_apply, err = pcall(mod.apply, colors, cfg, set_hl)
+  if not ok_apply then
+    log("module " .. name .. " error: " .. tostring(err), vim.log.levels.ERROR)
+  end
+end
 
-  local colors = load_colors()
+-- Public: apply colorscheme
+function M.apply()
+  local colors = load_colors(false)
   if not colors then
-    vim.notify("Matugen: Failed to load colors, aborting", vim.log.levels.ERROR)
     return false
   end
 
-  -- Set Normal group first (essential for proper rendering)
+  -- Clear/reset only when a valid palette is available.
+  api.nvim_command("highlight clear") -- equivalent to :hi clear [web:14]
+  if fn.exists("syntax_on") == 1 then
+    api.nvim_command("syntax reset") -- aligns with typical colorscheme lifecycle [web:14]
+  end
+  if cfg.background == "dark" or cfg.background == "light" then
+    vim.o.background = cfg.background -- set before colors to let defaults adapt [web:21]
+  end
+  vim.g.colors_name = "matugen" -- advertise theme name per convention [web:14]
+  opt.termguicolors = true -- ensure GUI colors for hex highlights [web:21]
+
+  -- Foundation
   set_hl("Normal", {
     fg = colors.on_surface or "#ffffff",
     bg = colors.background or "#000000",
   })
-  debug_log("Set Normal highlight group")
 
-  -- Apply plugin highlights
-  local modules_applied = 0
-  for module_name in pairs(config.plugins) do
-    apply_module(module_name, colors)
-    modules_applied = modules_applied + 1
-  end
-  debug_log("Applied " .. modules_applied .. " highlight modules")
-
-  -- Apply custom highlights
-  local custom_count = 0
-  for group, opts in pairs(config.custom_highlights) do
-    set_hl(group, opts)
-    custom_count = custom_count + 1
-  end
-  if custom_count > 0 then
-    debug_log("Applied " .. custom_count .. " custom highlights")
-  end
-
-  -- Clear ignored groups
-  for _, group in ipairs(config.ignore_groups) do
-    local ok, err = pcall(vim.cmd, "highlight clear " .. group)
-    if not ok then
-      debug_log("Failed to clear group " .. group .. ": " .. err, vim.log.levels.WARN)
+  -- Modules
+  for name, enabled in pairs(cfg.plugins) do
+    if enabled then
+      apply_module(name, colors)
     end
   end
 
-  if #config.ignore_groups > 0 then
-    debug_log("Cleared " .. #config.ignore_groups .. " ignored groups")
+  -- Custom highlights
+  if type(cfg.custom_highlights) == "function" then
+    pcall(cfg.custom_highlights, colors, cfg, set_hl)
+  elseif type(cfg.custom_highlights) == "table" then
+    set_many(cfg.custom_highlights)
   end
 
-  debug_log("Colorscheme application completed successfully")
+  -- Clear ignored groups (empty table clears per API)
+  for _, group in ipairs(cfg.ignore_groups or {}) do
+    pcall(api.nvim_set_hl, 0, group, {}) -- clearing via {} is supported [web:16]
+  end
+
+  -- Fire ColorScheme autocommands for better ecosystem compatibility.
+  pcall(api.nvim_exec_autocmds, "ColorScheme", { pattern = "matugen" }) -- trigger lifecycle hooks [web:14]
+
   return true
 end
 
---- Force reload colors (clear cache and reapply)
+-- Public: force reload
 function M.reload()
-  debug_log("Force reloading colorscheme")
-  colors_cache = nil
+  colors_cache, colors_mtime = nil, nil
   return M.apply()
 end
 
---- Setup function with enhanced validation
---- @param opts table|nil
-function M.setup(opts)
-  debug_log("Setting up Matugen colorscheme")
-
-  -- Merge configuration
-  config = vim.tbl_deep_extend("force", default_config, opts or {})
-
-  -- Validate configuration
-  if type(config.file) ~= "string" then
-    vim.notify("Matugen: Invalid file path in config", vim.log.levels.ERROR)
-    return false
+-- File watch (fs poll)
+local function stop_watch()
+  if poll_handle and not poll_handle:is_closing() then
+    poll_handle:stop()
+    poll_handle:close()
   end
+  poll_handle = nil
+end
 
-  if type(config.plugins) ~= "table" then
-    vim.notify("Matugen: Invalid plugins config", vim.log.levels.ERROR)
-    return false
+local function start_watch()
+  stop_watch()
+  if not (uv and uv.new_fs_poll) or not cfg.watch then
+    return
   end
-
-  debug_log("Configuration merged successfully")
-  debug_log("Color file: " .. config.file)
-  debug_log("Debug mode: " .. tostring(config.debug))
-
-  -- Clear cache when config changes
-  colors_cache = nil
-
-  -- Create commands with better error handling
-  vim.api.nvim_create_user_command("MatugenApply", function()
-    local success = M.apply()
-    if success then
-      vim.notify("Matugen: Colorscheme applied successfully", vim.log.levels.INFO)
+  local path = cfg.file
+  local handle = uv.new_fs_poll()
+  if not handle then
+    return
+  end
+  poll_handle = handle
+  handle:start(path, math.max(100, tonumber(cfg.watch_interval_ms) or 500), function(err, prev, curr)
+    if err then
+      log("fs_poll error: " .. tostring(err), vim.log.levels.WARN)
+      return
     end
-  end, {
-    desc = "Apply Matugen colorscheme",
-  })
-
-  vim.api.nvim_create_user_command("MatugenReload", function()
-    local success = M.reload()
-    if success then
-      vim.notify("Matugen: Colorscheme reloaded successfully", vim.log.levels.INFO)
+    local prev_m = prev and (prev.mtime and (prev.mtime.sec or prev.mtime) or nil) or nil
+    local curr_m = curr and (curr.mtime and (curr.mtime.sec or curr.mtime) or nil) or nil
+    if curr_m and curr_m ~= colors_mtime then
+      vim.schedule(function()
+        log("palette changed on disk; reloading")
+        M.reload()
+      end)
     end
-  end, {
-    desc = "Reload Matugen colorscheme (clear cache)",
-  })
+  end)
+end
 
-  vim.api.nvim_create_user_command("MatugenDebug", function()
-    config.debug = not config.debug
-    vim.notify("Matugen: Debug mode " .. (config.debug and "enabled" or "disabled"), vim.log.levels.INFO)
-  end, {
-    desc = "Toggle Matugen debug mode",
-  })
+-- Define user commands once
+local function ensure_commands()
+  if commands_created then
+    return
+  end
+  commands_created = true
 
-  vim.api.nvim_create_user_command("MatugenApplyReload", function()
-    local success = M.apply() and M.reload()
-    if success then
-      vim.notify("Matugen Colorscheme loaded and applied successfully", vim.log.levels.INFO)
+  api.nvim_create_user_command("MatugenApply", function()
+    if M.apply() then
+      vim.notify("Matugen: applied", vim.log.levels.INFO)
     end
-  end, {
-    desc = "Apply and Load Matugen Colorscheme",
-  })
+  end, { desc = "Apply Matugen colorscheme" }) -- user command API is stable [web:18]
 
-  vim.api.nvim_create_user_command("MatugenStatus", function()
-    local file_exists = vim.fn.filereadable(vim.fn.expand(config.file)) == 1
-    local colors_loaded = colors_cache ~= nil
+  api.nvim_create_user_command("MatugenReload", function()
+    if M.reload() then
+      vim.notify("Matugen: reloaded", vim.log.levels.INFO)
+    end
+  end, { desc = "Reload Matugen colorscheme" })
 
+  api.nvim_create_user_command("MatugenDebug", function()
+    cfg.debug = not cfg.debug
+    vim.notify("Matugen: debug " .. (cfg.debug and "on" or "off"), vim.log.levels.INFO)
+  end, { desc = "Toggle Matugen debug mode" })
+
+  api.nvim_create_user_command("MatugenStatus", function()
+    local path = cfg.file
+    local st = uv and uv.fs_stat and uv.fs_stat(path) or nil
     print("Matugen Status:")
-    print("  Color file: " .. config.file)
-    print("  File exists: " .. tostring(file_exists))
-    print("  Colors cached: " .. tostring(colors_loaded))
-    print("  Debug mode: " .. tostring(config.debug))
-    print("  Enabled plugins:")
-    for plugin, enabled in pairs(config.plugins) do
-      if enabled then
-        print("    - " .. plugin)
+    print("  Color file: " .. path)
+    print("  Exists: " .. tostring(st ~= nil or fn.filereadable(path) == 1))
+    print("  Cached: " .. tostring(colors_cache ~= nil))
+    print("  mtime: " .. tostring(colors_mtime))
+    print("  Debug: " .. tostring(cfg.debug))
+    print("  Watch: " .. tostring(cfg.watch))
+    print("  Enabled modules:")
+    for k, v in pairs(cfg.plugins) do
+      if v then
+        print("    - " .. k)
       end
     end
-  end, {
-    desc = "Show Matugen status and configuration",
-  })
+  end, { desc = "Show Matugen status" })
 
-  debug_log("Commands created successfully")
+  api.nvim_create_user_command("MatugenWatchToggle", function()
+    cfg.watch = not cfg.watch
+    if cfg.watch then
+      start_watch()
+    else
+      stop_watch()
+    end
+    vim.notify("Matugen: watch " .. (cfg.watch and "on" or "off"), vim.log.levels.INFO)
+  end, { desc = "Toggle Matugen file watcher" })
+end
 
-  -- Apply colorscheme
-  local success = M.apply()
-  if not success then
-    vim.notify("Matugen: Initial setup failed", vim.log.levels.ERROR)
-    return false
+-- Public: setup
+function M.setup(opts)
+  -- Shallow validation to catch common mistakes early.
+  opts = opts or {}
+  if type(opts.watch_interval_ms) == "number" and opts.watch_interval_ms < 10 then
+    opts.watch_interval_ms = 100
   end
+  local merged = vim.tbl_deep_extend("force", DEFAULT, opts)
+  merged.file = fn.expand(merged.file)
+  cfg = merged
 
-  debug_log("Setup completed successfully")
+  colors_cache, colors_mtime = nil, nil
+  ensure_commands()
+
+  if cfg.watch then
+    start_watch()
+  end
+  if cfg.auto_apply then
+    return M.apply()
+  end
   return true
 end
 
---- Clear color cache (useful for development)
+-- Utilities
 function M.clear_cache()
-  colors_cache = nil
-  debug_log("Color cache cleared")
+  colors_cache, colors_mtime = nil, nil
+  log("cache cleared")
 end
 
---- Get current configuration (for debugging)
 function M.get_config()
-  return vim.deepcopy(config)
+  return vim.deepcopy(cfg)
 end
 
---- Get cached colors (for debugging)
 function M.get_colors()
   return colors_cache and vim.deepcopy(colors_cache) or nil
+end
+
+function M.teardown()
+  stop_watch()
+  -- Note: user commands are intentionally kept until session ends.
 end
 
 return M

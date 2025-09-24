@@ -1,6 +1,12 @@
+-- ~/projects/matugen.nvim/lua/matugen_colorscheme/highlights/cmp.lua
+-- Completion highlights for nvim-cmp and blink.cmp using centralized colors.
+
 local M = {}
 
--- Style combinations for reuse
+local U = require("matugen_colorscheme.utils")
+local Cmod = require("matugen_colorscheme.colors")
+
+-- Simple style aliases
 local STYLES = {
   bold = { "bold" },
   italic = { "italic" },
@@ -8,170 +14,123 @@ local STYLES = {
   bold_italic = { "bold", "italic" },
 }
 
---- Apply completion highlights for both nvim-cmp and blink.cmp
---- @param colors table Color palette
---- @param config table Plugin configuration
---- @param set_hl function Highlight setter function
+-- LSP CompletionItemKind list (used by both engines for per-kind groups).
+local LSP_KINDS = {
+  "Text",
+  "Method",
+  "Function",
+  "Constructor",
+  "Field",
+  "Variable",
+  "Class",
+  "Interface",
+  "Module",
+  "Property",
+  "Unit",
+  "Value",
+  "Enum",
+  "Keyword",
+  "Snippet",
+  "Color",
+  "File",
+  "Reference",
+  "Folder",
+  "EnumMember",
+  "Constant",
+  "Struct",
+  "Event",
+  "Operator",
+  "TypeParameter",
+}
+
 function M.apply(colors, config, set_hl)
-  -- Semantic color mapping
-  local c = {
-    -- Text colors
-    text = colors.on_surface,
-    muted = colors.outline_variant or colors.outline,
+  -- Centralized palette snapshot
+  local C = Cmod.get()
 
-    -- Accent colors
-    primary = colors.primary,
-    secondary = colors.secondary,
-    tertiary = colors.tertiary,
+  -- Menu/doc surfaces and separations (provided by colors.lua)
+  local menu_bg = C.menu_bg
+  local menu_fg = C.menu_fg
+  local menu_muted = C.menu_muted
+  local doc_bg = C.doc_bg
+  local doc_border = C.doc_border
 
-    -- Fixed colors with fallbacks
-    primary_fixed = colors.primary_fixed or colors.primary,
-    secondary_fixed = colors.secondary_fixed or colors.secondary,
-    tertiary_fixed = colors.tertiary_fixed or colors.tertiary,
+  local selected_bg = C.selection_bg
+  local selected_fg = C.selection_fg
 
-    -- Dimmed variants
-    primary_dim = colors.primary_fixed_dim or colors.primary_container,
-    secondary_dim = colors.secondary_fixed_dim or colors.secondary_container,
-    tertiary_dim = colors.tertiary_fixed_dim or colors.tertiary_container,
+  -- Matching/emphasis accents
+  local match_fg = C.match_fg
 
-    -- UI colors
-    surface_high = colors.surface_container_highest or colors.surface,
-    surface_mid = colors.surface_container_high or colors.surface,
-    border = colors.outline,
-    error = colors.error,
-  }
+  -- nvim-cmp
+  set_hl("CmpItemAbbr", { fg = menu_fg })
+  set_hl("CmpItemAbbrDeprecated", { fg = menu_muted, style = STYLES.strikethrough })
+  set_hl("CmpItemAbbrMatch", { fg = match_fg, style = STYLES.bold })
+  set_hl("CmpItemAbbrMatchFuzzy", { fg = U.ensure_contrast(C.primary_container, menu_bg, 4.5), style = STYLES.bold })
 
-  -- Completion item kinds with their colors
-  local item_kinds = {
-    { "Variable", c.primary },
-    { "Function", c.secondary },
-    { "Method", c.secondary },
-    { "Field", c.primary_fixed },
-    { "Property", c.primary_fixed },
-    { "Enum", c.tertiary },
-    { "Keyword", c.primary },
-    { "Text", c.text },
-    { "Class", c.tertiary_fixed },
-    { "Interface", c.tertiary_dim },
-    { "Module", c.tertiary },
-    { "Struct", c.tertiary },
-    { "Constant", c.primary_dim },
-    { "Number", c.primary_fixed },
-    { "Boolean", c.primary },
-    { "String", c.tertiary_fixed },
-    { "Snippet", c.secondary_fixed },
-    { "Color", c.muted },
-    { "File", c.secondary },
-    { "Folder", c.secondary },
-    { "Unit", c.tertiary_fixed },
-    { "Value", c.primary_fixed },
-    { "Event", c.secondary_fixed },
-    { "Operator", c.tertiary },
-    { "TypeParameter", c.tertiary },
-  }
+  set_hl("CmpItemKind", { fg = menu_muted })
+  set_hl("CmpItemMenu", { fg = menu_muted })
 
-  -- Base completion highlights that work for both plugins
-  local base_highlights = {
-    -- Core UI
-    text = c.text,
-    muted = c.muted,
-    selected_fg = colors.on_primary_container,
-    selected_bg = colors.primary_container,
-    match_fg = c.primary,
-    match_bg = colors.primary_container,
-    deprecated = c.muted,
-    ghost_text = colors.on_surface_variant,
-
-    -- Backgrounds
-    menu_bg = c.surface_high,
-    doc_bg = c.surface_mid,
-    border_fg = c.border,
-  }
-
-  -- Generate highlights for both nvim-cmp and blink.cmp
-  local all_highlights = {}
-
-  -- Plugin prefixes to support both completion engines
-  local plugins = {
-    { prefix = "Cmp", name = "nvim-cmp" },
-    { prefix = "BlinkCompletion", name = "blink.cmp" },
-  }
-
-  for _, plugin in ipairs(plugins) do
-    local prefix = plugin.prefix
-
-    -- Core completion window
-    all_highlights[prefix .. (prefix == "Cmp" and "Pmenu" or "Window")] = {
-      fg = base_highlights.text,
-      bg = base_highlights.menu_bg,
-    }
-
-    -- Menu items
-    if prefix == "Cmp" then
-      all_highlights.CmpItemAbbrDefault = { fg = base_highlights.text }
-      all_highlights.CmpItemKindDefault = { fg = base_highlights.muted }
-      all_highlights.CmpItemMenuDefault = { fg = base_highlights.muted }
-      all_highlights.CmpItemAbbrMatch = { fg = base_highlights.match_fg, style = STYLES.bold }
-      all_highlights.CmpItemAbbrMatchFuzzy = { fg = c.primary_dim, style = STYLES.bold }
-      all_highlights.CmpItemAbbrDeprecated = { fg = base_highlights.deprecated, style = STYLES.strikethrough }
-    else
-      all_highlights.BlinkCompletionItemNormal = { fg = base_highlights.text }
-      all_highlights.BlinkCompletionItemKind = { fg = base_highlights.muted }
-      all_highlights.BlinkCompletionItemMenu = { fg = base_highlights.muted }
-      all_highlights.BlinkCompletionItemMatch = { fg = base_highlights.match_fg, style = STYLES.bold }
-      all_highlights.BlinkCompletionItemMatchFuzzy = { fg = c.primary_dim, style = STYLES.bold }
-      all_highlights.BlinkCompletionItemDeprecated = { fg = base_highlights.deprecated, style = STYLES.strikethrough }
+  for _, kind in ipairs(LSP_KINDS) do
+    -- Map kinds to accents using centralized prim/sec/tert variants
+    local color = C.primary
+    if kind == "Function" or kind == "Method" or kind == "Module" then
+      color = C.secondary
+    elseif kind == "Class" or kind == "Interface" or kind == "Struct" or kind == "TypeParameter" then
+      color = C.tertiary
+    elseif kind == "Constant" or kind == "Enum" or kind == "EnumMember" or kind == "Number" or kind == "Value" then
+      color = C.primary_container
+    elseif kind == "String" or kind == "File" or kind == "Folder" or kind == "Unit" then
+      color = C.tertiary_container
+    elseif kind == "Variable" or kind == "Field" or kind == "Property" then
+      color = C.primary_container
+    elseif kind == "Snippet" then
+      color = C.secondary_container
+    elseif kind == "Boolean" or kind == "Keyword" or kind == "Operator" or kind == "Event" then
+      color = C.primary
+    elseif kind == "Color" or kind == "Reference" then
+      color = menu_muted
     end
-
-    -- Selected item
-    local selected_group = prefix == "Cmp" and "CmpItemAbbrSelected" or "BlinkCompletionItemSelected"
-    all_highlights[selected_group] = {
-      fg = base_highlights.selected_fg,
-      bg = base_highlights.selected_bg,
-      style = STYLES.bold,
-    }
-
-    -- Documentation
-    local doc_group = prefix == "Cmp" and "CmpDocumentation" or "BlinkCompletionDocumentation"
-    local doc_border = prefix == "Cmp" and "CmpDocumentationBorder" or "BlinkCompletionDocumentationBorder"
-
-    all_highlights[doc_group] = { bg = base_highlights.doc_bg }
-    all_highlights[doc_border] = { fg = base_highlights.border_fg }
-
-    -- Item kinds
-    for _, kind in ipairs(item_kinds) do
-      local kind_name, color = kind[1], kind[2]
-      local group_name = prefix == "Cmp" and ("CmpItemKind" .. kind_name) or ("BlinkCompletionItemKind" .. kind_name)
-
-      all_highlights[group_name] = { fg = color }
-    end
-
-    -- Additional blink.cmp specific highlights
-    if prefix == "BlinkCompletion" then
-      all_highlights.BlinkCompletionGhostText = { fg = base_highlights.ghost_text, style = STYLES.italic }
-      all_highlights.BlinkCompletionBorder = { fg = base_highlights.border_fg }
-      all_highlights.BlinkCompletionSearchMatch = {
-        fg = base_highlights.match_fg,
-        bg = base_highlights.match_bg,
-        style = STYLES.bold,
-      }
-
-      -- Status indicators
-      all_highlights.BlinkCompletionStatusNormal = { fg = base_highlights.muted }
-      all_highlights.BlinkCompletionStatusSelected = { fg = base_highlights.selected_fg }
-      all_highlights.BlinkCompletionStatusError = { fg = c.error }
-    end
+    set_hl("CmpItemKind" .. kind, { fg = U.ensure_contrast(color, menu_bg, 4.5) })
   end
 
-  -- Additional nvim-cmp specific highlights
-  all_highlights.CmpGhostText = { fg = base_highlights.ghost_text, style = STYLES.italic }
-  all_highlights.CmpItemAbbr = { fg = base_highlights.text }
-  all_highlights.CmpItemKind = { fg = base_highlights.muted }
-  all_highlights.CmpItemMenu = { fg = base_highlights.muted }
+  set_hl("CmpDocumentation", { bg = doc_bg })
+  set_hl("CmpDocumentationBorder", { fg = doc_border })
+  set_hl("CmpGhostText", { fg = U.ensure_contrast(C.fg_muted, menu_bg, 4.5), style = STYLES.italic })
 
-  -- Apply all highlights
-  for group, opts in pairs(all_highlights) do
-    set_hl(group, opts)
+  -- blink.cmp (BlinkCmp* namespace)
+  set_hl("BlinkCmpMenu", { fg = menu_fg, bg = menu_bg })
+  set_hl("BlinkCmpMenuBorder", { fg = U.ensure_contrast(C.border, menu_bg, 4.5) })
+  set_hl("BlinkCmpMenuSelection", { fg = selected_fg, bg = selected_bg, style = STYLES.bold })
+
+  set_hl("BlinkCmpLabel", { fg = menu_fg })
+  set_hl("BlinkCmpLabelDeprecated", { fg = menu_muted, style = STYLES.strikethrough })
+  set_hl("BlinkCmpLabelMatch", { fg = match_fg, style = STYLES.bold })
+  set_hl("BlinkCmpGhostText", { fg = U.ensure_contrast(C.fg_muted, menu_bg, 4.5), style = STYLES.italic })
+
+  set_hl("BlinkCmpDoc", { bg = doc_bg })
+  set_hl("BlinkCmpDocBorder", { fg = doc_border })
+  set_hl("BlinkCmpSignatureHelpBorder", { fg = doc_border })
+
+  set_hl("BlinkCmpKind", { fg = menu_muted })
+  for _, kind in ipairs(LSP_KINDS) do
+    local color = C.primary
+    if kind == "Function" or kind == "Method" or kind == "Module" then
+      color = C.secondary
+    elseif kind == "Class" or kind == "Interface" or kind == "Struct" or kind == "TypeParameter" then
+      color = C.tertiary
+    elseif kind == "Constant" or kind == "Enum" or kind == "EnumMember" or kind == "Number" or kind == "Value" then
+      color = C.primary_container
+    elseif kind == "String" or kind == "File" or kind == "Folder" or kind == "Unit" then
+      color = C.tertiary_container
+    elseif kind == "Variable" or kind == "Field" or kind == "Property" then
+      color = C.primary_container
+    elseif kind == "Snippet" then
+      color = C.secondary_container
+    elseif kind == "Boolean" or kind == "Keyword" or kind == "Operator" or kind == "Event" then
+      color = C.primary
+    elseif kind == "Color" or kind == "Reference" then
+      color = menu_muted
+    end
+    set_hl("BlinkCmpKind" .. kind, { fg = U.ensure_contrast(color, menu_bg, 4.5) })
   end
 end
 

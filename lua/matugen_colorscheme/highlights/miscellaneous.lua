@@ -1,113 +1,44 @@
+-- ~/projects/matugen.nvim/lua/matugen_colorscheme/highlights/mini_clue.lua
+-- Mini.clue styled on the main Normal background using centralized colors.
+
 local M = {}
-local utils = require("matugen_colorscheme.utils")
 
--- Style combinations for consistency
-local STYLES = {
-  bold = { "bold" },
-  italic = { "italic" },
-  underline = { "underline" },
-  undercurl = { "undercurl" },
-  bold_italic = { "bold", "italic" },
-}
+function M.apply(colors, cfg, set_hl)
+  local U = require("matugen_colorscheme.utils")
+  local C = require("matugen_colorscheme.colors").get()
 
---- Apply miscellaneous plugin highlights
---- @param colors table Color palette
---- @param config table Plugin configuration
---- @param set_hl function Highlight setter function
-function M.apply(colors, config, set_hl)
-  -- Create semantic color shortcuts
-  local c = {
-    -- Base colors
-    fg = colors.on_surface,
-    bg = colors.background,
+  -- Use the main editor background so the panel integrates with Normal.
+  local panel_bg = C.bg
 
-    -- Primary system
-    primary = colors.primary,
-    primary_container = colors.primary_container,
-    on_primary = colors.on_primary,
-    on_primary_container = colors.on_primary_container,
+  -- Readable tones against the panel background.
+  local text = U.ensure_contrast(C.fg, panel_bg, 7.0)
+  local muted = U.ensure_contrast(C.fg_muted, panel_bg, 4.5)
+  local border = U.ensure_contrast(C.border, panel_bg, 4.5)
+  local title = U.ensure_contrast(C.primary, panel_bg, 5.0)
+  local key_fg = U.ensure_contrast(C.tertiary, panel_bg, 5.0)
+  local count_fg = U.ensure_contrast(C.error, panel_bg, 5.0)
+  local hint_fg = U.ensure_contrast(C.secondary, panel_bg, 5.0)
 
-    -- Secondary system
-    secondary = colors.secondary,
-    secondary_container = colors.secondary_container,
-    on_secondary = colors.on_secondary,
-    on_secondary_container = colors.on_secondary_container,
+  -- Selection derived from centralized selection colors to stay consistent.
+  local sel_bg = C.selection_bg
+  local sel_fg = C.selection_fg
 
-    -- Tertiary system
-    tertiary = colors.tertiary,
-    tertiary_container = colors.tertiary_container,
-    on_tertiary = colors.on_tertiary,
-    on_tertiary_container = colors.on_tertiary_container,
+  -- Panel and chrome
+  set_hl("MiniClueBackground", { fg = text, bg = panel_bg })
+  set_hl("MiniClueBorder", { fg = border, bg = panel_bg })
+  set_hl("MiniClueTitle", { fg = title, bg = panel_bg, style = { "bold" } })
+  set_hl("MiniClueSeparator", { fg = border, bg = panel_bg })
 
-    -- Error system
-    error = colors.error,
-    error_container = colors.error_container,
-    on_error_container = colors.on_error_container,
+  -- Content
+  set_hl("MiniClueDescGroup", { fg = muted, bg = panel_bg })
+  set_hl("MiniClueDescSingle", { fg = text, bg = panel_bg })
+  set_hl("MiniClueNextKey", { fg = key_fg, bg = panel_bg, style = { "bold" } })
+  set_hl("MiniClueNextKeyWithPostkeys", { fg = key_fg, bg = panel_bg, style = { "bold" } })
+  set_hl("MiniClueHint", { fg = hint_fg, bg = panel_bg })
+  set_hl("MiniClueCount", { fg = count_fg, bg = panel_bg, style = { "bold" } })
 
-    -- Surface hierarchy
-    surface = colors.surface,
-    surface_high = colors.surface_container_high,
-
-    -- Outline system
-    outline_variant = colors.outline_variant,
-    on_surface_variant = colors.on_surface_variant,
-
-    -- Brightened backgrounds for context differentiation
-    bg_bright = utils.brighten_hex(colors.background, 12), -- Increased brightness
-    bg_brighter = utils.brighten_hex(colors.background, 20),
-  }
-
-  local highlights = {
-    -- === TREESITTER CONTEXT (Multiple possible group names) ===
-    TreesitterContext = { bg = c.bg_bright },
-    TreesitterContextLineNumber = { fg = c.primary, bg = c.bg_bright, style = STYLES.bold },
-    TreesitterContextSeparator = { fg = c.outline_variant },
-    TreesitterContextBottom = { sp = c.outline_variant, style = STYLES.underline },
-
-    -- Alternative names
-    ["@context"] = { bg = c.bg_bright },
-    ["@context.builtin"] = { bg = c.bg_bright },
-    TSContext = { bg = c.bg_bright },
-    TSContextLineNumber = { fg = c.primary, bg = c.bg_bright, style = STYLES.bold },
-
-    -- Nvim-treesitter-context (the actual plugin)
-    TreesitterContextLineNumberBottom = { fg = c.primary, bg = c.bg_bright },
-
-    -- === MINI.NVIM PLUGINS ===
-
-    -- Mini.keyclue
-    MiniClueTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
-    MiniClueDescGroup = { fg = c.secondary, bg = c.surface_high },
-    MiniClueDescSingle = { fg = c.fg, bg = c.surface_high },
-    MiniClueNextKey = { fg = c.tertiary, bg = c.surface_high, style = STYLES.bold },
-    MiniClueNextKeyWithPostkeys = { fg = c.tertiary, bg = c.surface_high, style = STYLES.bold },
-    MiniClueSeparator = { fg = c.outline_variant, bg = c.surface_high },
-    MiniClueBackground = { bg = c.surface_high },
-
-    -- === ENHANCED FLOATING WINDOWS ===
-    FloatBorder = { fg = c.outline_variant, bg = c.surface_high },
-    FloatTitle = { fg = c.primary, bg = c.surface_high, style = STYLES.bold },
-    FloatFooter = { fg = c.on_surface_variant, bg = c.surface_high },
-
-    -- === OTHER COMMON WORD/REFERENCE HIGHLIGHTING ===
-    -- Vim's built-in matchparen equivalent for words
-    MatchWord = { bg = c.bg_bright },
-
-    -- Some plugins use these
-    CurrentWord = { bg = c.bg_bright },
-    MatchedChar = { bg = c.bg_bright },
-    MatchedWord = { bg = c.bg_bright },
-
-    -- === DEBUGGING HIGHLIGHTS (to see what's being applied) ===
-    -- Uncomment these temporarily to see if they work:
-    -- DebugTest1 = { bg = "#FF0000" }, -- Bright red for testing
-    -- DebugTest2 = { bg = "#00FF00" }, -- Bright green for testing
-  }
-
-  -- Apply all highlights
-  for group, opts in pairs(highlights) do
-    set_hl(group, opts)
-  end
+  -- Selection row
+  set_hl("MiniClueSelection", { fg = sel_fg, bg = sel_bg, style = { "bold" } })
 end
 
 return M
